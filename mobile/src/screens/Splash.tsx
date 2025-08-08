@@ -1,13 +1,12 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TextStyle, ImageStyle } from 'react-native';
-import { useNavigation } from '@react-navigation/native'; 
 import Colors from '../constants/colors';
 import Typography from '../constants/typography';
 import Spacing from '../constants/spacing';
+import useAppNavigation from '../hooks/useAppNavigation';
 
 export default function Splash() {
-    const navigation = useNavigation<any>();
-
+    const navigation = useAppNavigation();
     useEffect(() => {
         const timer = setTimeout(() => {
         navigation.navigate('Login');
@@ -37,16 +36,19 @@ const styles = StyleSheet.create({
         padding: Spacing.lg
     },
     logo: {
-        width: 96,
-        height: 96,
+        width: 56,
+        height: 56,
         marginBottom: Spacing.md
     } as ImageStyle,
     title: {
         ...Typography.display,
-        color: Colors.primary
+        color: Colors.text,
     } as TextStyle,
     caption: {
+        position: 'absolute',             
+        bottom: Spacing.margin,       
+        alignSelf: 'center',             
         ...Typography.caption,
-        color: Colors.greyStroke
+        color: Colors.greyStroke,
     } as TextStyle
 });
