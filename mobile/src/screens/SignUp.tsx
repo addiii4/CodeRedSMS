@@ -113,10 +113,13 @@ const styles = StyleSheet.create({
         color: Colors.text
     } as TextStyle,
     form: {
-        marginTop: Spacing.xl
+        paddingTop: Spacing.margin,
+        marginTop: Spacing.margin,
+        paddingHorizontal: Spacing.lg,
+        justifyContent: 'center'
     },
     input: {
-        height: 50,
+        height: 56,
         borderWidth: 1,
         borderColor: Colors.greyStroke,
         borderRadius: 12,
