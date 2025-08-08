@@ -22,6 +22,7 @@ export default function SignupScreen() {
 
     const handleSignup = () => {
         console.log('Signup:', { name, email, phone, password });
+        navigation.navigate('Dashboard');
     };
 
     return (
