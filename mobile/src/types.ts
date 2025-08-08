@@ -2,5 +2,5 @@ export type RootStackParamList = {
     Splash: undefined;
     Login: undefined;
     Signup: undefined;
-    DashBoard: undefined;
+    Dashboard: undefined;
 };
