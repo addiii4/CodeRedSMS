@@ -37,16 +37,19 @@ const styles = StyleSheet.create({
         padding: Spacing.lg
     },
     logo: {
-        width: 96,
-        height: 96,
-        marginBottom: Spacing.md
+        width: 108,
+        height: 108,
     } as ImageStyle,
     title: {
         ...Typography.display,
-        color: Colors.primary
+        color: Colors.text,
     } as TextStyle,
     caption: {
+        position: 'absolute',             
+        bottom: Spacing.xl,
+        padding: Spacing.xl,        
+        alignSelf: 'center',             
         ...Typography.caption,
-        color: Colors.greyStroke
+        color: Colors.greyStroke,
     } as TextStyle
 });
