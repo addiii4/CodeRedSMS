@@ -11,6 +11,12 @@ import Colors from '../constants/colors';
 import Spacing from '../constants/spacing';
 import Typography from '../constants/typography';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import SectionTitle from '../components/SectionTitle';
+import CreditsBadge from '../components/CreditsBadge';
+import ActivityCard from '../components/ActivityCard';
+import PrimaryButton from '../components/PrimaryButton';
+import QuickActionButton from '../components/QuickActionButton';
+import NavBar from '../components/NavBar';
 
 export default function Dashboard() {
     return (
@@ -90,7 +96,7 @@ const styles = StyleSheet.create({
         paddingBottom: Spacing.xxl
     },
     header: {
-        marginTop: Spacing.xxl,
+        marginTop: Spacing.margin,
         marginBottom: Spacing.lg,
         flexDirection: 'row',
         justifyContent: 'space-between',
