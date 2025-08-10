@@ -45,11 +45,12 @@ export default function Dashboard() {
                 </View>
             </ScrollView>
 
-            <NavBar activeTab="home" onNavigate={(tab) => {
-                if (tab === 'compose') navigation.navigate('Compose' as never);
-                if (tab === 'menu') navigation.navigate('Settings' as never);
-                if (tab === 'home') {/* already here */}
-            }} />
+            <NavBar
+                activeTab="home"
+                onHome={() => navigation.navigate('Dashboard' as never)}
+                onCompose={() => navigation.navigate('Compose' as never)}
+                onMenu={() => navigation.navigate('Settings' as never)}
+            />
         </View>
     );
 }

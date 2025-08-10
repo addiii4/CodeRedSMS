@@ -5,24 +5,35 @@ import color from '../constants/colors';
 import spacing from '../constants/spacing';
 
 type Tab = 'home' | 'compose' | 'menu';
+
 type Props = {
     activeTab: Tab;
-    onNavigate: (tab: Tab) => void;
+    onHome: () => void;      // go to Dashboard
+    onCompose: () => void;   // go to Compose
+    onMenu: () => void;      // go to Settings
 };
 
-export default function NavBar({ activeTab, onNavigate }: Props) {
+export default function NavBar({ activeTab, onHome, onCompose, onMenu }: Props) {
     return (
         <View style={styles.bar}>
-            <Pressable onPress={() => onNavigate('home')}>
-                <Ionicons name="home-outline" size={24} color={activeTab === 'home' ? color.text : '#777'} />
+            <Pressable onPress={onHome}>
+                <Ionicons
+                    name="home-outline"
+                    size={24}
+                    color={activeTab === 'home' ? color.text : '#777'}
+                />
             </Pressable>
 
-            <Pressable onPress={() => onNavigate('compose')} style={styles.fab}>
+            <Pressable onPress={onCompose} style={styles.fab}>
                 <Ionicons name="add" size={24} color="#FFFFFF" />
             </Pressable>
 
-            <Pressable onPress={() => onNavigate('menu')}>
-                <Ionicons name="menu-outline" size={24} color={activeTab === 'menu' ? color.text : '#777'} />
+            <Pressable onPress={onMenu}>
+                <Ionicons
+                    name="menu-outline"
+                    size={24}
+                    color={activeTab === 'menu' ? color.text : '#777'}
+                />
             </Pressable>
         </View>
     );
