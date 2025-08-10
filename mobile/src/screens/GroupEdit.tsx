@@ -39,14 +39,15 @@ export default function GroupEdit() {
 
                 <View style={{ height: spacing.margin }} />
             </View>
-
-            <BottomCTA label="Save Group" onPress={() => navigation.goBack()} />
-            <NavBar
-                activeTab="home"
-                onHome={() => navigation.navigate('Dashboard')}
-                onCompose={() => navigation.navigate('Compose')}
-                onMenu={() => navigation.navigate('Settings')}
-            />
+            <View style={styles.footer}>
+                <BottomCTA label="Save Group" onPress={() => navigation.goBack()} />
+                <NavBar
+                    activeTab="home"
+                    onHome={() => navigation.navigate('Dashboard')}
+                    onCompose={() => navigation.navigate('Compose')}
+                    onMenu={() => navigation.navigate('Settings')}
+                />
+            </View>
         </View>
     );
 }
@@ -55,6 +56,7 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: color.background, justifyContent: 'space-between' },
     content: { paddingHorizontal: spacing.lg, marginTop: spacing.margin, paddingBottom: spacing.md },
     header: { ...typography.title, marginBottom: spacing.md } as TextStyle,
+    footer: { backgroundColor: color.background },
     label: { ...typography.label, color: color.text } as TextStyle,
     input: {
         height: 50, borderWidth: 1, borderColor: color.greyStroke, borderRadius: 12,

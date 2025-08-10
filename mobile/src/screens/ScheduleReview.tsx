@@ -142,12 +142,12 @@ const styles = StyleSheet.create({
     },
     content: {
         paddingHorizontal: spacing.lg,
-        paddingTop: 56,
         paddingBottom: 56 + 72 + spacing.md
     },
     topRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        marginTop: spacing.margin,
         marginBottom: spacing.md
     },
     back: {
