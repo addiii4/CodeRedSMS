@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextStyle } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextStyle } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import spacing from '../constants/spacing';
-import color from '../constants/colors';
+import color from '../constants/color';
 import typography from '../constants/typography';
 import SearchBar from '../components/SearchBar';
 import CheckboxRow from '../components/CheckboxRow';
@@ -24,8 +25,17 @@ export default function SelectGroups() {
     return (
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.content}>
-                <Text style={styles.header}>Choose Recipients</Text>
+                {/* Header with Back */}
+                <View style={styles.topRow}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
+                        <Ionicons name="chevron-back" size={24} color={color.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.header}>Choose Recipients</Text>
+                    <View style={{ width: 24 }} />
+                </View>
+
                 <SearchBar value={q} onChangeText={setQ} placeholder="Search groups…" />
+
                 <View style={{ marginTop: spacing.md }}>
                     {Object.entries(checked).map(([label, isChecked]) => (
                         <CheckboxRow
@@ -41,8 +51,9 @@ export default function SelectGroups() {
             </ScrollView>
 
             <BottomCTA label="Next · Schedule" onPress={() => navigation.navigate('ScheduleReview' as never)} />
+
             <NavBar
-                activeTab="compose"
+                activeTab="home"
                 onHome={() => navigation.navigate('Dashboard' as never)}
                 onCompose={() => navigation.navigate('Compose' as never)}
                 onMenu={() => navigation.navigate('Settings' as never)}
@@ -58,12 +69,24 @@ const styles = StyleSheet.create({
     },
     content: {
         paddingHorizontal: spacing.lg,
-        marginTop: spacing.margin,
+        paddingTop: 56,
         paddingBottom: 56 + 72 + spacing.md
+    },
+    topRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: spacing.md
+    },
+    back: {
+        width: 24,
+        height: 24,
+        justifyContent: 'center',
+        marginRight: spacing.sm
     },
     header: {
         ...typography.title,
-        marginBottom: spacing.md
+        flex: 1,
+        textAlign: 'left'
     } as TextStyle,
     helper: {
         ...typography.label,
