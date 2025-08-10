@@ -1,16 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet, TextStyle } from 'react-native';
+import { View, Text, StyleSheet, TextStyle, Pressable } from 'react-native';
 import color from '../constants/color';
 import spacing from '../constants/spacing';
 import typography from '../constants/typography';
 
-type Props = { credits: number };
+type Props = { credits: number; onPress?: () => void };
 
-export default function CreditsBadge({ credits }: Props) {
+export default function CreditsBadge({ credits, onPress }: Props) {
+    const Wrapper = onPress ? Pressable : View;
     return (
-        <View style={styles.badge}>
+        <Wrapper onPress={onPress as any} style={styles.badge}>
             <Text style={styles.text}>{credits} Credits</Text>
-        </View>
+        </Wrapper>
     );
 }
 

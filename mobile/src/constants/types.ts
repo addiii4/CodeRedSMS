@@ -11,7 +11,12 @@ export type RootStackParamList = {
     TemplatePreview: { title: string; body: string };
     // Other
     Logs: undefined;
-    Contacts: undefined;
     Templates: undefined;
+    TemplateEdit: undefined;
+    Contacts: undefined;
+    GroupDetail: undefined;
+    PersonEdit: undefined;
+    GroupEdit: undefined;
+    BuyCredits: undefined;
     Settings: undefined;
 };
