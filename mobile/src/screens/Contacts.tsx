@@ -20,7 +20,7 @@ export default function Contacts() {
             <ScrollView contentContainerStyle={styles.content}>
                 <Text style={styles.header}>Contacts</Text>
                 <SegmentedControl segments={['Groups', 'People']} value={tab} onChange={(v) => setTab(v as any)} style={{ marginTop: spacing.md }} />
-                <View style={{ marginTop: spacing.lg }}>
+                <View style={{ marginTop: spacing.md }}>
                     <SearchBar value={q} onChangeText={setQ} placeholder={`Search ${tab.toLowerCase()}…`} />
                 </View>
 

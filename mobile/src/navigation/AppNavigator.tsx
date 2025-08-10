@@ -19,6 +19,13 @@ import TemplateEdit from '../screens/TemplateEdit';
 import Templates from '../screens/Templates';
 import GroupEdit from '../screens/GroupEdit';
 import PersonEdit from '../screens/PersonEdit';
+import ChangePassword from '../screens/ChangePassword';
+import ContactImport from '../screens/ContactImport';
+import ContactUs from '../screens/ContactUs';
+import HelpCenter from '../screens/HelpCenter';
+import PaymentMethods from '../screens/PaymentMethods';
+import Profile from '../screens/Profile';
+import PurchaseHistory from '../screens/PurchaseHistory';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -43,6 +50,13 @@ export default function AppNavigator() {
             <Stack.Screen name="BuyCredits" component={BuyCredits} />
             <Stack.Screen name="GroupEdit" component={GroupEdit} />
             <Stack.Screen name="PersonEdit" component={PersonEdit} />
+            <Stack.Screen name="Profile" component={Profile} />
+            <Stack.Screen name="ChangePassword" component={ChangePassword} />
+            <Stack.Screen name="PaymentMethods" component={PaymentMethods} />
+            <Stack.Screen name="PurchaseHistory" component={PurchaseHistory} />
+            <Stack.Screen name="HelpCenter" component={HelpCenter} />
+            <Stack.Screen name="ContactUs" component={ContactUs} />
+            <Stack.Screen name="ContactImport" component={ContactImport} />
         </Stack.Navigator>
         </NavigationContainer>
     );

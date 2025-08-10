@@ -19,4 +19,11 @@ export type RootStackParamList = {
     GroupEdit: undefined;
     BuyCredits: undefined;
     Settings: undefined;
+    Profile: undefined;
+    ChangePassword: undefined;
+    PaymentMethods: undefined;
+    PurchaseHistory: undefined;
+    HelpCenter: undefined;
+    ContactUs: undefined;
+    ContactImport: undefined;
 };
