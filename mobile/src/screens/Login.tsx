@@ -15,6 +15,7 @@ import useAppNavigation from '../hooks/useAppNavigation';
 import Colors from '../constants/colors';
 import Spacing from '../constants/spacing';
 import Typography from '../constants/typography';
+import Dashboard from './Dashboard';
 
 export default function LoginScreen() {
     const navigation = useAppNavigation();
@@ -22,6 +23,7 @@ export default function LoginScreen() {
 
     const handleLogin = () => {
         console.log('Building code:', buildingCode);
+        navigation.navigate('Dashboard');
     };
 
     const handleSignup = () => {
