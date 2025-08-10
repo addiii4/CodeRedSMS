@@ -8,7 +8,7 @@ import {
     Image,
     TextStyle
 } from 'react-native';
-import Colors from '../constants/colors';
+import Colors from '../constants/color';
 import Spacing from '../constants/spacing';
 import Typography from '../constants/typography';
 import useAppNavigation from '../hooks/useAppNavigation';

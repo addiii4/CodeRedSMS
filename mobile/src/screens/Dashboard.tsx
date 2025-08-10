@@ -7,7 +7,7 @@ import { View, Text, ScrollView, StyleSheet, Pressable,
     Image,
     TextStyle
 } from 'react-native';
-import Colors from '../constants/colors';
+import Colors from '../constants/color';
 import Spacing from '../constants/spacing';
 import Typography from '../constants/typography';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -45,11 +45,12 @@ export default function Dashboard() {
                 </View>
             </ScrollView>
 
-            <NavBar activeTab="home" onNavigate={(tab) => {
-                if (tab === 'compose') navigation.navigate('Compose' as never);
-                if (tab === 'menu') navigation.navigate('Settings' as never);
-                if (tab === 'home') {/* already here */}
-            }} />
+            <NavBar
+                activeTab="home"
+                onHome={() => navigation.navigate('Dashboard' as never)}
+                onCompose={() => navigation.navigate('Compose' as never)}
+                onMenu={() => navigation.navigate('Settings' as never)}
+            />
         </View>
     );
 }
