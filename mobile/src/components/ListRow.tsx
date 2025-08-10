@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Pressable, TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import spacing from '../constants/spacing';
 import typography from '../constants/typography';
-import color from '../constants/colors';
+import color from '../constants/color';
 
 type Props = {
     title: string;

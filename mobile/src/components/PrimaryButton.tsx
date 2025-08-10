@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, Pressable, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import color from '../constants/colors';
+import color from '../constants/color';
 import spacing from '../constants/spacing';
 import typography from '../constants/typography';
 

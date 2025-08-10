@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import useAppNavigation from '../hooks/useAppNavigation';
 
-import Colors from '../constants/colors';
+import Colors from '../constants/color';
 import Spacing from '../constants/spacing';
 import Typography from '../constants/typography';
 import Dashboard from './Dashboard';

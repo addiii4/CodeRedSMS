@@ -7,7 +7,7 @@ import { View, Text, ScrollView, StyleSheet, Pressable,
     Image,
     TextStyle
 } from 'react-native';
-import Colors from '../constants/colors';
+import Colors from '../constants/color';
 import Spacing from '../constants/spacing';
 import Typography from '../constants/typography';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';

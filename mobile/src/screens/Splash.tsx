@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TextStyle, ImageStyle } from 'react-native';
-import Colors from '../constants/colors';
+import Colors from '../constants/color';
 import Typography from '../constants/typography';
 import Spacing from '../constants/spacing';
 import useAppNavigation from '../hooks/useAppNavigation';

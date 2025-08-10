@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import color from '../constants/colors';
+import color from '../constants/color';
 import spacing from '../constants/spacing';
 
 type Tab = 'home' | 'compose' | 'menu';
