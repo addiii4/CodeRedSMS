@@ -28,7 +28,7 @@ export default function Dashboard() {
                 {/* Header */}
                 <View style={styles.header}>
                     <Text style={styles.title as any}>Dashboard</Text>
-                    <CreditsBadge credits={550} />
+                    <CreditsBadge credits={550} onPress={() => navigation.navigate('BuyCredits')} />
                 </View>
 
                 <SecTitle text="Recent Activity" />
@@ -38,7 +38,7 @@ export default function Dashboard() {
 
                 <SecTitle text="Quick Actions" />
                 <View style={styles.actionsGrid}>
-                    <QuickActionButton label="Compose" icon="add" onPress={() => navigation.navigate('Compose' as never)} />
+                    <QuickActionButton label="Buy Credits" icon="card-outline" onPress={() => navigation.navigate('BuyCredits')} />
                     <QuickActionButton label="Contacts" icon="people-outline" onPress={() => navigation.navigate('Contacts' as never)} />
                     <QuickActionButton label="Templates" icon="description" lib="mat" onPress={() => navigation.navigate('Templates' as never)} />
                     <QuickActionButton label="Logs" icon="list" lib="mat" onPress={() => navigation.navigate('Logs' as never)} />
