@@ -7,6 +7,7 @@ import ListRow from '../components/ListRow';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
+import HeaderBack from '../components/HeaderBack';
 
 export default function ContactImport() {
     const navigation = useAppNavigation();
@@ -32,7 +33,9 @@ export default function ContactImport() {
     return (
         <View style={styles.container}>
             <View style={styles.content}>
-                <Text style={styles.title}>Import & Manage Contacts</Text>
+                <View style={{ marginHorizontal: -spacing.lg }}>
+                    <HeaderBack title="Manage Contacts" />
+                </View>
 
                 <View style={styles.card}>
                     <Text style={styles.sectionLabel}>Import</Text>
@@ -59,21 +62,29 @@ export default function ContactImport() {
                 </View>
             </View>
 
-            <BottomCTA label="Done" onPress={() => navigation.goBack()} />
-            <NavBar activeTab="menu" onHome={() => navigation.navigate('Dashboard')} onCompose={() => navigation.navigate('Compose')} onMenu={() => {}} />
+            <View style={styles.footer}>
+                <BottomCTA label="Done" onPress={() => navigation.goBack()} />
+                <NavBar
+                    activeTab="menu"
+                    onHome={() => navigation.navigate('Dashboard')}
+                    onCompose={() => navigation.navigate('Compose')}
+                    onMenu={() => {}}
+                />
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container:{ flex:1, backgroundColor: color.background, justifyContent:'space-between' },
-    content:{ paddingHorizontal: spacing.lg, marginTop: spacing.margin, paddingBottom: spacing.md },
+    content:{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
     title:{ ...typography.title, marginBottom: spacing.md } as TextStyle,
     card:{
         backgroundColor:'#FFFFFF', borderRadius:12, borderWidth:1, borderColor:'#00000012', padding: spacing.md
     },
     sectionLabel:{ ...typography.label, color:'#8E8E8E', marginBottom: spacing.sm } as TextStyle,
     action:{ paddingVertical: spacing.md },
+    footer: { backgroundColor: color.background },
     actionText:{ ...typography.body, color: color.primary, fontWeight:600 } as TextStyle,
     meta:{ ...typography.label, color:'#8E8E8E' } as TextStyle
 });

@@ -7,13 +7,16 @@ import typography from '../constants/typography';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
+import HeaderBack from '../components/HeaderBack';
 
 export default function Profile() {
     const navigation = useAppNavigation();
     return (
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.content}>
-                <Text style={styles.title}>Profile</Text>
+                <View style={{ marginHorizontal: -spacing.lg }}>
+                    <HeaderBack title="Profile" />
+                </View>
                 <Text style={styles.label}>Full Name</Text>
                 <TextInput style={styles.input} placeholder="Your name" placeholderTextColor="#BDBDBD" />
                 <Text style={[styles.label, { marginTop: spacing.md }]}>Email</Text>
@@ -27,7 +30,7 @@ export default function Profile() {
 }
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: color.background },
-    content: { paddingHorizontal: spacing.lg, marginTop: spacing.margin, paddingBottom: spacing.md },
+    content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
     title: { ...typography.title, marginBottom: spacing.md } as TextStyle,
     label: { ...typography.label, color: color.text } as TextStyle,
     input: {

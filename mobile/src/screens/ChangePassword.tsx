@@ -6,13 +6,16 @@ import typography from '../constants/typography';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
+import HeaderBack from '../components/HeaderBack';
 
 export default function ChangePassword() {
     const navigation = useAppNavigation();
     return (
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.content}>
-                <Text style={styles.title}>Change Password</Text>
+                <View style={{ marginHorizontal: -spacing.lg }}>
+                    <HeaderBack title="Change Password" />
+                </View>
                 <Text style={styles.label}>Current Password</Text>
                 <TextInput style={styles.input} secureTextEntry placeholder="••••••••" placeholderTextColor="#BDBDBD" />
                 <Text style={[styles.label, { marginTop: spacing.md }]}>New Password</Text>
@@ -28,7 +31,7 @@ export default function ChangePassword() {
 }
 const styles = StyleSheet.create({
     container:{ flex:1, backgroundColor: color.background },
-    content:{ paddingHorizontal: spacing.lg, marginTop: spacing.margin, paddingBottom: spacing.md },
+    content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
     title:{ ...typography.title, marginBottom: spacing.md } as TextStyle,
     label:{ ...typography.label, color: color.text } as TextStyle,
     input:{

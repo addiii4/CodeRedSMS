@@ -7,6 +7,7 @@ import typography from '../constants/typography';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
+import HeaderBack from '../components/HeaderBack';
 
 export default function GroupEdit() {
     const navigation = useAppNavigation();
@@ -16,7 +17,9 @@ export default function GroupEdit() {
     return (
         <View style={styles.container}>
             <View style={styles.content}>
-                <Text style={styles.header}>New Group</Text>
+                <View style={{ marginHorizontal: -spacing.lg }}>
+                    <HeaderBack title="New Group" />
+                </View>
 
                 <Text style={styles.label}>Group Name</Text>
                 <TextInput
@@ -54,7 +57,7 @@ export default function GroupEdit() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: color.background, justifyContent: 'space-between' },
-    content: { paddingHorizontal: spacing.lg, marginTop: spacing.margin, paddingBottom: spacing.md },
+    content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
     header: { ...typography.title, marginBottom: spacing.md } as TextStyle,
     footer: { backgroundColor: color.background },
     label: { ...typography.label, color: color.text } as TextStyle,
