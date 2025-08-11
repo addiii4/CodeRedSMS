@@ -11,6 +11,7 @@ import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../constants/types';
+import Spacing from '../constants/spacing';
 
 type ComposeParams = RouteProp<RootStackParamList, 'Compose'>;
 
@@ -124,11 +125,10 @@ export default function Compose() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: color.background },
     content: {
-        paddingHorizontal: spacing.lg,
-        paddingTop: 56,                                      // top spacing
-        paddingBottom: 56 + 72 + spacing.md                  // bottom spacing + navbar
+        paddingHorizontal: spacing.lg,                                     
+        paddingBottom: 56 + 72 + spacing.md                  
     },
-    header: { ...typography.title } as TextStyle,
+    header: { marginTop: Spacing.margin, ...typography.title } as TextStyle,
     label: { ...typography.label, color: color.text } as TextStyle,
     input: {
         height: 50, borderWidth: 1, borderColor: color.greyStroke, borderRadius: 12,

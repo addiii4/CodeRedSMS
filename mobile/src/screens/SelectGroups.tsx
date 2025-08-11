@@ -9,6 +9,7 @@ import CheckboxRow from '../components/CheckboxRow';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
+import Spacing from '../constants/spacing';
 
 export default function SelectGroups() {
     const navigation = useAppNavigation();
@@ -69,12 +70,12 @@ const styles = StyleSheet.create({
     },
     content: {
         paddingHorizontal: spacing.lg,
-        paddingTop: 56,
         paddingBottom: 56 + 72 + spacing.md
     },
     topRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        marginTop: spacing.margin,
         marginBottom: spacing.md
     },
     back: {

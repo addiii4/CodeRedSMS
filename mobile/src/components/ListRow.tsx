@@ -10,17 +10,21 @@ type Props = {
     title: string;
     meta?: string;        // e.g., "132 chars" or time
     onPress?: () => void;
-    rightIcon?: 'chevron-forward' | 'ellipsis-horizontal' | null;
+    rightIcon?: React.ReactNode | null;
+    showChevron?: boolean; 
 };
 
-export default function ListRow({ title, meta, onPress, rightIcon = 'chevron-forward' }: Props) {
+export default function ListRow({ title, meta, onPress, rightIcon, showChevron = true }: Props) {
     return (
-        <Pressable onPress={onPress} style={styles.row}>
+        <Pressable onPress={onPress} disabled={!onPress} style={styles.row}>
             <View style={{ flex: 1 }}>
                 <Text style={styles.title}>{title}</Text>
                 {!!meta && <Text style={styles.meta}>{meta}</Text>}
             </View>
-            {rightIcon && <Ionicons name={rightIcon} size={18} color="#999" />}
+            {rightIcon !== null && rightIcon}
+            {showChevron && rightIcon === undefined && (
+                <Ionicons name="chevron-forward" size={18} color="#BDBDBD" />
+            )}
         </Pressable>
     );
 }
