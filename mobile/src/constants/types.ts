@@ -26,4 +26,5 @@ export type RootStackParamList = {
     HelpCenter: undefined;
     ContactUs: undefined;
     ContactImport: undefined;
+    LogDetail: { id: string } | undefined;
 };

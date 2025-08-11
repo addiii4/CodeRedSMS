@@ -26,6 +26,7 @@ import HelpCenter from '../screens/HelpCenter';
 import PaymentMethods from '../screens/PaymentMethods';
 import Profile from '../screens/Profile';
 import PurchaseHistory from '../screens/PurchaseHistory';
+import LogDetail from '../screens/LogDetail';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -57,6 +58,7 @@ export default function AppNavigator() {
             <Stack.Screen name="HelpCenter" component={HelpCenter} />
             <Stack.Screen name="ContactUs" component={ContactUs} />
             <Stack.Screen name="ContactImport" component={ContactImport} />
+            <Stack.Screen name="LogDetail" component={LogDetail} />
         </Stack.Navigator>
         </NavigationContainer>
     );

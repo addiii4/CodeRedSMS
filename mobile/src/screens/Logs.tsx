@@ -30,9 +30,9 @@ export default function Logs() {
                 </View>
 
                 <View style={{ marginTop: spacing.md }}>
-                    <ListRow title="Fire Alarm – Evacuate Now" meta="Delivered · Today 09:24" onPress={() => {}} />
-                    <ListRow title="Maintenance Notice Tonight" meta="Failed · Yesterday 15:01" onPress={() => {}} />
-                    <ListRow title="Evacuation Drill Reminder" meta="Scheduled · 12 Aug 10:30" onPress={() => {}} />
+                    <ListRow title="Fire Alarm – Evacuate Now" meta="Delivered · Today 09:24" onPress={() => navigation.navigate('LogDetail', { id: '1' })} />
+                    <ListRow title="Maintenance Notice Tonight" meta="Failed · Yesterday 15:01" onPress={() => navigation.navigate('LogDetail', { id: '2' })} />
+                    <ListRow title="Evacuation Drill Reminder" meta="Scheduled · 12 Aug 10:30" onPress={() => navigation.navigate('LogDetail', { id: '3' })} />
                 </View>
 
                 <View style={{ height: spacing.margin }} />
