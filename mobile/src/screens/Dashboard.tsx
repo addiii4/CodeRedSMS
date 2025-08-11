@@ -18,6 +18,7 @@ import PrimaryButton from '../components/PrimaryButton';
 import QuickActionButton from '../components/QuickActionButton';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Dashboard() {
     const navigation = useAppNavigation();
@@ -26,10 +27,12 @@ export default function Dashboard() {
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {/* Header */}
-                <View style={styles.header}>
-                    <Text style={styles.title as any}>Dashboard</Text>
-                    <CreditsBadge credits={550} onPress={() => navigation.navigate('BuyCredits')} />
-                </View>
+                <SafeAreaView edges={['top']} style={{ paddingTop: Spacing.md }}>
+                    <View style={styles.header}>
+                        <Text style={styles.title as any}>Dashboard</Text>
+                        <CreditsBadge credits={550} onPress={() => navigation.navigate('BuyCredits')} />
+                    </View>
+                </SafeAreaView>
 
                 <SecTitle text="Recent Activity" />
                 <ActivityCard text="5 SMS sent | Today at 09:24" />
@@ -61,11 +64,10 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.background
     },
     scrollContent: {
-        padding: Spacing.md,
+        paddingHorizontal: Spacing.lg,
         paddingBottom: Spacing.xl + 72
     },
     header: {
-        marginTop: Spacing.margin, 
         marginBottom: Spacing.lg,
         flexDirection: 'row',
         justifyContent: 'space-between',
