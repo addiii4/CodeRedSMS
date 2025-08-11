@@ -4,13 +4,14 @@ import color from '../constants/color';
 import spacing from '../constants/spacing';
 import typography from '../constants/typography';
 
-type Props = { credits: number; onPress?: () => void };
+type Props = { credits?: number; label?: string; onPress?: () => void };
 
-export default function CreditsBadge({ credits, onPress }: Props) {
+export default function CreditsBadge({ credits, label, onPress }: Props) {
+    const text = label ?? `${credits ?? 0} Credits`;
     const Wrapper = onPress ? Pressable : View;
     return (
         <Wrapper onPress={onPress as any} style={styles.badge}>
-            <Text style={styles.text}>{credits} Credits</Text>
+            <Text style={styles.text}>{text}</Text>
         </Wrapper>
     );
 }
