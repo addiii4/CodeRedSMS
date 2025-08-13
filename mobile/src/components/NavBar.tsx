@@ -4,62 +4,69 @@ import { Ionicons } from '@expo/vector-icons';
 import color from '../constants/color';
 import spacing from '../constants/spacing';
 
-type Tab = 'home' | 'compose' | 'menu';
-
 type Props = {
-    activeTab: Tab;
-    onHome: () => void;      // go to Dashboard
-    onCompose: () => void;   // go to Compose
-    onMenu: () => void;      // go to Settings
+    /** Which tab should render as active (red). Use "home" on Dashboard, "menu" on Settings root. */
+    activeTab?: 'home' | 'menu';
+    onHome: () => void;
+    onCompose: () => void;
+    onMenu: () => void;
+    /** When true, tapping + is disabled, but its visual style does NOT change. */
+    disableCompose?: boolean;
 };
 
-export default function NavBar({ activeTab, onHome, onCompose, onMenu }: Props) {
+export default function NavBar({ activeTab, onHome, onCompose, onMenu, disableCompose }: Props) {
+    const homeColor = activeTab === 'home' ? color.primary : '#666666';
+    const menuColor = activeTab === 'menu' ? color.primary : '#666666';
+
     return (
-        <View style={styles.bar}>
-            <Pressable onPress={onHome}>
-                <Ionicons
-                    name="home-outline"
-                    size={24}
-                    color={activeTab === 'home' ? color.text : '#777'}
-                />
+        <View style={styles.wrap}>
+            {/* Home */}
+            <Pressable onPress={onHome} style={styles.sideBtn} hitSlop={10}>
+                <Ionicons name="home-outline" size={26} color={homeColor} />
             </Pressable>
 
-            <Pressable onPress={onCompose} style={styles.fab}>
-                <Ionicons name="add" size={24} color="#FFFFFF" />
+            {/* Center FAB (visuals never change) */}
+            <Pressable
+                onPress={disableCompose ? undefined : onCompose}
+                disabled={!!disableCompose}
+                style={styles.fab}
+                hitSlop={10}
+            >
+                <Ionicons name="add" size={28} color="#FFFFFF" />
             </Pressable>
 
-            <Pressable onPress={onMenu}>
-                <Ionicons
-                    name="menu-outline"
-                    size={24}
-                    color={activeTab === 'menu' ? color.text : '#777'}
-                />
+            {/* Menu */}
+            <Pressable onPress={onMenu} style={styles.sideBtn} hitSlop={10}>
+                <Ionicons name="menu-outline" size={26} color={menuColor} />
             </Pressable>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    bar: {
-        height: 72,
-        backgroundColor: '#F2F2F2',
+    wrap: {
+        backgroundColor: '#EFEFEF',
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
         flexDirection: 'row',
-        justifyContent: 'space-around',
         alignItems: 'center',
-        paddingHorizontal: spacing.md
+        justifyContent: 'space-around' // ← pulls side icons slightly inward (back to original feel)
+    },
+    sideBtn: {
+        padding: 4
     },
     fab: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: 64,
+        height: 64,
+        borderRadius: 32,
         backgroundColor: color.primary,
-        justifyContent: 'center',
         alignItems: 'center',
-        marginTop: -28,
+        justifyContent: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.15,
-        shadowRadius: 10,
-        elevation: 4
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 4,
+        marginTop: -24 // float slightly above the bar
     }
 });

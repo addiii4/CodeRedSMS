@@ -111,6 +111,7 @@ export default function ScheduleReview() {
                 onHome={() => navigation.navigate('Dashboard' as never)}
                 onCompose={() => navigation.navigate('Compose' as never)}
                 onMenu={() => navigation.navigate('Settings' as never)}
+                disableCompose 
             />
 
             {/* Modal Date/Time Picker to avoid layout jumps */}

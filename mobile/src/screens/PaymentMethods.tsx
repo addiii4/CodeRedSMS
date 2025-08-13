@@ -21,7 +21,7 @@ export default function PaymentMethods() {
                 <View style={{ height: spacing.margin }} />
             </ScrollView>
             <BottomCTA label="Add New Card" onPress={() => {}} />
-            <NavBar activeTab="menu" onHome={() => navigation.navigate('Dashboard')} onCompose={() => navigation.navigate('Compose')} onMenu={() => {}} />
+            <NavBar onHome={() => navigation.navigate('Dashboard')} onCompose={() => navigation.navigate('Compose')} onMenu={() => navigation.navigate('Settings')}  />
         </View>
     );
 }

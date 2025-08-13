@@ -43,7 +43,6 @@ export default function TemplateEdit() {
             <BottomCTA label="Save Template" onPress={() => navigation.goBack()} />
 
             <NavBar
-                activeTab="home"
                 onHome={() => navigation.navigate('Dashboard')}
                 onCompose={() => navigation.navigate('Compose')}
                 onMenu={() => navigation.navigate('Settings')}

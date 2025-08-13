@@ -36,7 +36,6 @@ export default function GroupDetail() {
             <BottomCTA label="Add Member" onPress={() => navigation.navigate('PersonEdit')} />
 
             <NavBar
-                activeTab="home"
                 onHome={() => navigation.navigate('Dashboard')}
                 onCompose={() => navigation.navigate('Compose')}
                 onMenu={() => navigation.navigate('Settings')}

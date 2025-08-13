@@ -17,7 +17,7 @@ export default function HelpCenter() {
                 </View>
                 <Text style={styles.body}>FAQ, guides, and troubleshooting will live here.</Text>
             </View>
-            <NavBar activeTab="menu" onHome={() => navigation.navigate('Dashboard')} onCompose={() => navigation.navigate('Compose')} onMenu={() => {}} />
+            <NavBar onHome={() => navigation.navigate('Dashboard')} onCompose={() => navigation.navigate('Compose')} onMenu={() => navigation.navigate('Settings')} />
         </View>
     );
 }

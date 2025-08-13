@@ -17,7 +17,7 @@ export default function HelpCenter() {
                 </View>
                 <Text style={styles.body}>https://www.coderedsms.com.au/</Text>
             </View>
-            <NavBar activeTab="menu" onHome={() => navigation.navigate('Dashboard')} onCompose={() => navigation.navigate('Compose')} onMenu={() => {}} />
+            <NavBar onHome={() => navigation.navigate('Dashboard')} onCompose={() => navigation.navigate('Compose')} onMenu={() => navigation.navigate('Settings')}  />
         </View>
     );
 }
