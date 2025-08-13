@@ -113,7 +113,6 @@ export default function Compose() {
             <BottomCTA label="Next · Recipients" onPress={() => navigation.navigate('SelectGroups')} />
 
             <NavBar
-                activeTab="home"
                 onHome={() => navigation.navigate('Dashboard')}
                 onCompose={() => navigation.navigate('Compose')}
                 onMenu={() => navigation.navigate('Settings')}

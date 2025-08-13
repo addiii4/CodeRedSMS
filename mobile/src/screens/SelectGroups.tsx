@@ -54,7 +54,6 @@ export default function SelectGroups() {
             <BottomCTA label="Next · Schedule" onPress={() => navigation.navigate('ScheduleReview' as never)} />
 
             <NavBar
-                activeTab="home"
                 onHome={() => navigation.navigate('Dashboard' as never)}
                 onCompose={() => navigation.navigate('Compose' as never)}
                 onMenu={() => navigation.navigate('Settings' as never)}
