@@ -56,7 +56,6 @@ export default function PersonEdit() {
             <View style={styles.footer}>
                 <BottomCTA label="Save Member" onPress={() => navigation.goBack()} />
                 <NavBar
-                    activeTab="home"
                     onHome={() => navigation.navigate('Dashboard')}
                     onCompose={() => navigation.navigate('Compose')}
                     onMenu={() => navigation.navigate('Settings')}

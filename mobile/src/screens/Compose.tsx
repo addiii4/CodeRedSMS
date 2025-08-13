@@ -117,6 +117,7 @@ export default function Compose() {
                 onHome={() => navigation.navigate('Dashboard')}
                 onCompose={() => navigation.navigate('Compose')}
                 onMenu={() => navigation.navigate('Settings')}
+                disableCompose 
             />
         </View>
     );

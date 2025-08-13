@@ -21,7 +21,7 @@ export default function PurchaseHistory() {
                 <ListRow title="10,000 Credits" meta="$599 · 15 Jul 2025" showChevron={false} />
                 <View style={{ height: spacing.margin }} />
             </ScrollView>
-            <NavBar activeTab="menu" onHome={() => navigation.navigate('Dashboard')} onCompose={() => navigation.navigate('Compose')} onMenu={() => navigation.navigate('Settings')} />
+            <NavBar onHome={() => navigation.navigate('Dashboard')} onCompose={() => navigation.navigate('Compose')} onMenu={() => navigation.navigate('Settings')} />
         </View>
     );
 }

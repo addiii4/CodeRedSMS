@@ -45,7 +45,6 @@ export default function GroupEdit() {
             <View style={styles.footer}>
                 <BottomCTA label="Save Group" onPress={() => navigation.goBack()} />
                 <NavBar
-                    activeTab="home"
                     onHome={() => navigation.navigate('Dashboard')}
                     onCompose={() => navigation.navigate('Compose')}
                     onMenu={() => navigation.navigate('Settings')}

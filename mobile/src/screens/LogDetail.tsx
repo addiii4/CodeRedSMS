@@ -74,7 +74,6 @@ export default function LogDetail() {
             </ScrollView>
 
             <NavBar
-                activeTab="home"
                 onHome={() => navigation.navigate('Dashboard')}
                 onCompose={() => navigation.navigate('Compose')}
                 onMenu={() => navigation.navigate('Settings')}

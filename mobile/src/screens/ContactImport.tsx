@@ -65,7 +65,6 @@ export default function ContactImport() {
             <View style={styles.footer}>
                 <BottomCTA label="Done" onPress={() => navigation.goBack()} />
                 <NavBar
-                    activeTab="menu"
                     onHome={() => navigation.navigate('Dashboard')}
                     onCompose={() => navigation.navigate('Compose')}
                     onMenu={() => navigation.navigate('Settings')} 

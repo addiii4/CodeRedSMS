@@ -52,7 +52,6 @@ export default function Templates() {
             <BottomCTA label="Create Template" onPress={() => navigation.navigate('TemplateEdit')} />
 
             <NavBar
-                activeTab="home"
                 onHome={() => navigation.navigate('Dashboard')}
                 onCompose={() => navigation.navigate('Compose')}
                 onMenu={() => navigation.navigate('Settings')}

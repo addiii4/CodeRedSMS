@@ -44,7 +44,6 @@ export default function Contacts() {
             <BottomCTA label={tab === 'Groups' ? 'New Group' : 'Add Person'} onPress={() => navigation.navigate(tab === 'Groups' ? 'GroupEdit' : 'PersonEdit')} />
 
             <NavBar
-                activeTab="home"
                 onHome={() => navigation.navigate('Dashboard')}
                 onCompose={() => navigation.navigate('Compose')}
                 onMenu={() => navigation.navigate('Settings')}
