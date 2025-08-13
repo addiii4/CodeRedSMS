@@ -25,7 +25,7 @@ export default function ChangePassword() {
                 <View style={{ height: spacing.margin }} />
             </ScrollView>
             <BottomCTA label="Update Password" onPress={() => navigation.goBack()} />
-            <NavBar activeTab="menu" onHome={() => navigation.navigate('Dashboard')} onCompose={() => navigation.navigate('Compose')} onMenu={() => {}} />
+            <NavBar activeTab="menu" onHome={() => navigation.navigate('Dashboard')} onCompose={() => navigation.navigate('Compose')} onMenu={() => navigation.navigate('Settings')} />
         </View>
     );
 }

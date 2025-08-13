@@ -68,7 +68,7 @@ export default function ContactImport() {
                     activeTab="menu"
                     onHome={() => navigation.navigate('Dashboard')}
                     onCompose={() => navigation.navigate('Compose')}
-                    onMenu={() => {}}
+                    onMenu={() => navigation.navigate('Settings')} 
                 />
             </View>
         </View>
