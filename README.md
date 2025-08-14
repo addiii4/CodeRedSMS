@@ -30,5 +30,3 @@ Code Red SMS is a React Native (TypeScript) mobile app for emergency mass messag
 
 2. **Run the app**
     npx expo start
-
-If you want, I can also add a **"Next Steps"** section so that anyone reading knows what’s left in development. That would make this README even more useful while the project is still in progress.

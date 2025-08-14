@@ -107,7 +107,6 @@ export default function ScheduleReview() {
             />
 
             <NavBar
-                activeTab="home"
                 onHome={() => navigation.navigate('Dashboard' as never)}
                 onCompose={() => navigation.navigate('Compose' as never)}
                 onMenu={() => navigation.navigate('Settings' as never)}
