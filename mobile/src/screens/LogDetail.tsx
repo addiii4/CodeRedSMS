@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
         padding: spacing.md,
         marginBottom: spacing.md
     },
-    rowCard: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
+    rowCard: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md, marginLeft: spacing.md },
     meta: { ...typography.label, color: '#8E8E8E', marginBottom: 4 } as TextStyle,
     body: { ...typography.body } as TextStyle,
     breakRow: {
