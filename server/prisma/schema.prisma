@@ -1,155 +1,176 @@
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Organization {
-    id                  String   @id @default(uuid())
-    code                String   @unique       // Building code (login key)
-    name                String
-    senderId            String?  // optional alphanumeric sender
-    credits             Int      @default(0)
+  id       String  @id @default(uuid())
+  code     String  @unique // Building code (login key)
+  name     String
+  senderId String? // optional alphanumeric sender
+  credits  Int     @default(0)
 
-    // provider credentials (encrypted later)
-    smsglobalKeyEnc     String? 
-    smsglobalSecretEnc  String?
+  // provider credentials (encrypted later)
+  smsglobalKeyEnc    String?
+  smsglobalSecretEnc String?
 
-    users    Membership[]
-    contacts Contact[]
-    groups   Group[]
-    templates Template[]
-    messages Message[]
-    ledger   CreditsLedger[]
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  users     Membership[]
+  contacts  Contact[]
+  groups    Group[]
+  templates Template[]
+  messages  Message[]
+  ledger    CreditsLedger[]
+  devices   Device[] // <-- back-relation for Device.org
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model User {
-    id            String   @id @default(uuid())
-    email         String
-    passwordHash  String
-    displayName   String
-    memberships   Membership[]
-    createdAt     DateTime @default(now())
-    updatedAt     DateTime @updatedAt
+  id           String       @id @default(uuid())
+  email        String       @unique
+  passwordHash String
+  displayName  String
+  memberships  Membership[]
+  devices      Device[] // <-- back-relation for Device.user
 
-    @@unique([email])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Membership {
-    id     String @id @default(uuid())
-    user   User   @relation(fields: [userId], references: [id])
-    userId String
-    org    Organization @relation(fields: [orgId], references: [id])
-    orgId  String
-    role   Role
+  id     String       @id @default(uuid())
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  orgId  String
+  role   Role
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    @@unique([userId, orgId])
+  @@unique([userId, orgId])
 }
 
 enum Role {
-    admin
-    editor
-    viewer
+  admin
+  editor
+  viewer
 }
 
 model Contact {
-    id        String @id @default(uuid())
-    org       Organization @relation(fields: [orgId], references: [id])
-    orgId     String
-    fullName  String
-    phoneE164 String
-    groupMembers GroupMember[]
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id           String        @id @default(uuid())
+  org          Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  orgId        String
+  fullName     String
+  phoneE164    String
+  groupMembers GroupMember[]
 
-    @@index([orgId, phoneE164])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, phoneE164])
 }
 
 model Group {
-    id        String @id @default(uuid())
-    org       Organization @relation(fields: [orgId], references: [id])
-    orgId     String
-    name      String
-    description String?
-    members   GroupMember[]
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id          String        @id @default(uuid())
+  org         Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  orgId       String
+  name        String
+  description String?
+  members     GroupMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model GroupMember {
-    id        String @id @default(uuid())
-    group     Group  @relation(fields: [groupId], references: [id])
-    groupId   String
-    contact   Contact @relation(fields: [contactId], references: [id])
-    contactId String
+  id        String  @id @default(uuid())
+  group     Group   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId   String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String
 
-    @@unique([groupId, contactId])
+  @@unique([groupId, contactId])
 }
 
 model Template {
-    id        String @id @default(uuid())
-    org       Organization @relation(fields: [orgId], references: [id])
-    orgId     String
-    title     String
-    body      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id    String       @id @default(uuid())
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  orgId String
+  title String
+  body  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Message {
-    id        String @id @default(uuid())
-    org       Organization @relation(fields: [orgId], references: [id])
-    orgId     String
-    authorId  String      // user id
-    title     String
-    body      String
-    scheduledAt DateTime?
-    status    MessageStatus @default(draft)
-    recipients MessageRecipient[]
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id          String             @id @default(uuid())
+  org         Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  orgId       String
+  authorId    String // user id (relation optional for now)
+  title       String
+  body        String
+  scheduledAt DateTime?
+  status      MessageStatus      @default(draft)
+  recipients  MessageRecipient[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum MessageStatus {
-    draft
-    queued
-    sending
-    sent
-    failed
+  draft
+  queued
+  sending
+  sent
+  failed
 }
 
 model MessageRecipient {
-    id           String @id @default(uuid())
-    message      Message @relation(fields: [messageId], references: [id])
-    messageId    String
-    contactId    String?
-    phoneE164    String
-    providerMsgId String?
-    status       String   @default("queued")
-    deliveredAt  DateTime?
-    errorCode    String?
+  id            String    @id @default(uuid())
+  message       Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId     String
+  contactId     String?
+  phoneE164     String
+  providerMsgId String?
+  status        String    @default("queued")
+  deliveredAt   DateTime?
+  errorCode     String?
 }
 
 model CreditsLedger {
-    id       String  @id @default(uuid())
-    org      Organization @relation(fields: [orgId], references: [id])
-    orgId    String
-    type     LedgerType
-    amount   Int      // positive integer credits
-    reason   String
-    stripePaymentId String?
-    createdAt DateTime @default(now())
+  id              String       @id @default(uuid())
+  org             Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  orgId           String
+  type            LedgerType
+  amount          Int // positive integer credits
+  reason          String
+  stripePaymentId String?
+  createdAt       DateTime     @default(now())
+}
+
+model Device {
+  id         String       @id @default(uuid())
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  orgId      String
+  user       User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId     String?
+  deviceId   String // opaque UUID from the app
+  platform   String? // 'ios' | 'android'
+  pushToken  String? // for notifications later
+  lastSeenAt DateTime     @default(now())
+
+  @@unique([orgId, deviceId])
+  @@index([userId])
 }
 
 enum LedgerType {
-    credit
-    debit
+  credit
+  debit
 }
