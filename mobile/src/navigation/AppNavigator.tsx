@@ -27,7 +27,7 @@ import PaymentMethods from '../screens/PaymentMethods';
 import Profile from '../screens/Profile';
 import PurchaseHistory from '../screens/PurchaseHistory';
 import LogDetail from '../screens/LogDetail';
-import { AuthProvider } from './src/state/auth.tsx';
+import { AuthProvider } from '../state/auth';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
