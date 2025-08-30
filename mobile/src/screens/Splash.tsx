@@ -4,21 +4,15 @@ import Colors from '../constants/color';
 import Typography from '../constants/typography';
 import Spacing from '../constants/spacing';
 import useAppNavigation from '../hooks/useAppNavigation';
-import { useAuth } from '../state/auth';
 
 export default function Splash() {
-    const { ready, user } = useAuth();
     const navigation = useAppNavigation();
-
     useEffect(() => {
-        const t = setTimeout(() => {
-            if (ready) {
-                if (user) navigation.replace('Dashboard');
-                else navigation.replace('Login');
-            }
+        const timer = setTimeout(() => {
+        navigation.navigate('Login');
         }, 1000);
-        return () => clearTimeout(t);
-    }, [ready, user]);
+    return () => clearTimeout(timer);
+    }, []);
 
     return (
     <View style={styles.container}>
