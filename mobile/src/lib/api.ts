@@ -25,5 +25,5 @@ export const api = {
     get: <T>(path: string) => request<T>('GET', path),
     post: <T>(path: string, body?: any) => request<T>('POST', path, body),
     patch: <T>(path: string, body?: any) => request<T>('PATCH', path, body),
-    delete: <T>(path: string) => request<T>('DELETE', path)
+    delete:<T>(path: string, body?: any)  => request<T>('DELETE', path, body),
 };
