@@ -6,23 +6,34 @@ import {
     TextInput,
     TouchableOpacity,
     Image,
-    TextStyle
+    TextStyle,
+    Alert
 } from 'react-native';
 import Colors from '../constants/color';
 import Spacing from '../constants/spacing';
 import Typography from '../constants/typography';
 import useAppNavigation from '../hooks/useAppNavigation';
+import { useAuth } from '../state/auth';
 
 export default function SignupScreen() {
     const navigation = useAppNavigation();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
-    const [phone, setBuildingCode] = useState('');
+    const [buildingCode, setBuildingCode] = useState('');
     const [password, setPassword] = useState('');
+    const { register } = useAuth();
 
-    const handleSignup = () => {
-        console.log('Signup:', { name, email, phone, password });
-        navigation.navigate('Dashboard');
+    const handleSignup = async () => {
+    try {
+        await register({
+        buildingCode,
+        email,
+        password,
+        });
+        navigation.navigate('Dashboard' as never);
+    } catch (e: any) {
+        Alert.alert('Error', e.message);
+    }
     };
 
     return (
@@ -62,7 +73,7 @@ export default function SignupScreen() {
                     style={styles.input}
                     placeholder="Building Code"
                     placeholderTextColor={Colors.greyStroke}
-                    value={phone}
+                    value={buildingCode}
                     onChangeText={setBuildingCode}
                 />
                 <TextInput
