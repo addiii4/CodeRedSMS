@@ -17,23 +17,29 @@ import { useAuth } from '../state/auth';
 
 export default function SignupScreen() {
     const navigation = useAppNavigation();
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [buildingCode, setBuildingCode] = useState('');
-    const [password, setPassword] = useState('');
     const { register } = useAuth();
 
+    const [buildingCode, setBuildingCode] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirm, setConfirm] = useState('');
+    const [name, setName] = useState('');
+
     const handleSignup = async () => {
-    try {
-        await register({
-        buildingCode,
-        email,
-        password,
-        });
-        navigation.navigate('Dashboard' as never);
-    } catch (e: any) {
-        Alert.alert('Error', e.message);
-    }
+        if (!buildingCode || !email || !password || !confirm) {
+            Alert.alert('Missing info', 'Please fill all fields.');
+            return;
+        }
+        if (password !== confirm) {
+            Alert.alert('Passwords do not match', 'Please re-enter.');
+            return;
+        }
+        try {
+            await register({ buildingCode, email, password });
+            navigation.navigate('Dashboard');
+        } catch (e: any) {
+            Alert.alert('Sign up failed', e.message || 'Try again.');
+        }
     };
 
     return (
@@ -84,7 +90,14 @@ export default function SignupScreen() {
                     onChangeText={setPassword}
                     secureTextEntry
                 />
-
+                <TextInput
+                    style={styles.input}
+                    placeholder="Confirm Password"
+                    placeholderTextColor={Colors.greyStroke}
+                    value={confirm}
+                    onChangeText={setConfirm}
+                    secureTextEntry
+                />
                 <TouchableOpacity style={styles.button} onPress={handleSignup}>
                     <Text style={styles.buttonText}>Create Account</Text>
                 </TouchableOpacity>
