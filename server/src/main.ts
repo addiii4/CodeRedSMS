@@ -1,4 +1,3 @@
-import 'react-native-get-random-values';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';

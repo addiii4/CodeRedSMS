@@ -2,12 +2,11 @@
   "name": "codered-server",
   "version": "0.1.0",
   "scripts": {
-    "start": "node dist/main.js",
+    "dev": "tsx watch src/main.ts",
     "build": "tsc -p tsconfig.json",
-    "dev": "ts-node-dev --respawn --transpile-only src/main.ts",
+    "start": "node dist/main.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts"
   },
   "keywords": [],
@@ -38,9 +37,7 @@
     "@types/node": "^24.3.0",
     "@types/passport-jwt": "^4.0.1",
     "@types/react": "^19.1.11",
-    "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0",
-    "tsx": "^4.20.4",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.2"
   }
 }

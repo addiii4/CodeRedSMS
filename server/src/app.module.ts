@@ -11,7 +11,7 @@ import { TemplatesModule } from './templates/templates.module';
 
 @Module({
     imports: [
-        ConfigModule.forRoot({ isGlobal: true }),
+        ConfigModule.forRoot({ isGlobal: true, cache: true }),
         PrismaModule,
         HealthModule,
         AuthModule,
