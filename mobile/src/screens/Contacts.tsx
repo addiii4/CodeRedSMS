@@ -10,15 +10,24 @@ import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
 import { Contact, contactsApi } from '../services/contacts';
+import { groupsApi, Group } from '../services/groups';
 
 export default function Contacts() {
     const navigation = useAppNavigation();
     const [tab, setTab] = useState<'Groups' | 'People'>('Groups');
     const [q, setQ] = useState('');
     const [contacts, setContacts] = useState<Contact[]>([]);
+    const [groups, setGroups] = useState<Group[]>([]);
 
     useEffect(() => {
         load();
+    }, []);
+
+    useEffect(() => {
+      // load groups once on mount
+        groupsApi.list()
+            .then(setGroups)
+            .catch((e: any) => Alert.alert('Error', e.message));
     }, []);
 
     const load = async () => {
@@ -41,9 +50,25 @@ export default function Contacts() {
 
                 {tab === 'Groups' ? (
                     <View style={{ marginTop: spacing.md }}>
+                        {groups
+                            .filter(g => g.name.toLowerCase().includes(q.toLowerCase()))
+                            .map(g => (
+                                <ListRow
+                                    key={g.id}
+                                    title={g.name}
+                                    meta={`${(g.members || []).length} members`}
+                                    onPress={() => {
+                                        navigation.navigate('GroupDetail')// Optional: navigate to a GroupDetail later
+                                    }}
+                                />
+                            ))
+                        }
+
+                        {/* --- keep your original placeholders for now (commented) ---
                         <ListRow title="Maintenance Staff" meta="32 members" onPress={() => navigation.navigate('GroupDetail')} />
                         <ListRow title="Tenants – Tower A" meta="120 members" onPress={() => navigation.navigate('GroupDetail')} />
                         <ListRow title="Fire Wardens" meta="8 members" onPress={() => navigation.navigate('GroupDetail')} />
+                        ------------------------------------------------------------ */}
                     </View>
                 ) : (
                     <View style={{ marginTop: spacing.md }}>
