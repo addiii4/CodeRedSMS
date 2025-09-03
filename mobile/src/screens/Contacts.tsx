@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextStyle } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextStyle, Alert } from 'react-native';
 import spacing from '../constants/spacing';
 import color from '../constants/color';
 import typography from '../constants/typography';
@@ -9,11 +9,26 @@ import ListRow from '../components/ListRow';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
+import { Contact, contactsApi } from '../services/contacts';
 
 export default function Contacts() {
     const navigation = useAppNavigation();
     const [tab, setTab] = useState<'Groups' | 'People'>('Groups');
     const [q, setQ] = useState('');
+    const [contacts, setContacts] = useState<Contact[]>([]);
+
+    useEffect(() => {
+        load();
+    }, []);
+
+    const load = async () => {
+        try {
+            const res = await contactsApi.list();
+            setContacts(res);
+        } catch (e: any) {
+            Alert.alert('Error', e.message);
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -32,9 +47,25 @@ export default function Contacts() {
                     </View>
                 ) : (
                     <View style={{ marginTop: spacing.md }}>
+                        {contacts
+                            .filter(c =>
+                                c.fullName.toLowerCase().includes(q.toLowerCase()) ||
+                                c.phoneE164.toLowerCase().includes(q.toLowerCase())
+                            )
+                            .map(c => (
+                                <ListRow
+                                    key={c.id}
+                                    title={c.fullName}
+                                    meta={c.phoneE164}
+                                    onPress={() => {}}
+                                />
+                            ))
+                        }
+                        {/* 
                         <ListRow title="Alice Chen" meta="+61 400 123 456" onPress={() => {}} />
                         <ListRow title="Ben Singh" meta="+61 400 987 654" onPress={() => {}} />
                         <ListRow title="Chris Walker" meta="+61 400 222 333" onPress={() => {}} />
+                        */}
                     </View>
                 )}
 
