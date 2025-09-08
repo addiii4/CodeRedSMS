@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { api, setAccessToken } from '../lib/api';
+import 'react-native-get-random-values';
 import { Platform } from 'react-native';
 import { v4 as uuid } from 'uuid';
 

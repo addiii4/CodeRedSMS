@@ -5,8 +5,8 @@ export type RootStackParamList = {
     Dashboard: undefined;
     // Compose flow
     Compose: { presetTitle?: string; presetBody?: string } | undefined;
-    SelectGroups: undefined;
-    ScheduleReview: undefined;
+    SelectGroups: { selectedGroupIds?: string[] } | undefined;
+    ScheduleReview: { selectedGroupIds?: string[] } | undefined;
     // Template preview
     TemplatePreview: { title: string; body: string };
     // Other
