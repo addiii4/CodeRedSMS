@@ -9,6 +9,9 @@ import SegmentedControl from '../components/SegmentedControl';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
+import { useRoute, RouteProp } from '@react-navigation/native';
+import { RootStackParamList } from '../constants/types';
+
 
 export default function ScheduleReview() {
     const navigation = useAppNavigation();
@@ -17,6 +20,8 @@ export default function ScheduleReview() {
     const [date, setDate] = useState<Date>(new Date());
     const [pickerOpen, setPickerOpen] = useState(false);
     const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
+    const route = useRoute<RouteProp<RootStackParamList, 'ScheduleReview'>>();
+    const selectedGroupIds = route.params?.selectedGroupIds ?? [];
 
     const onChange = (_: any, d?: Date) => {
         // Android fires onChange immediately; iOS updates while spinning

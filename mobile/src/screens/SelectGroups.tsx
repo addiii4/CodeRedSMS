@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextStyle } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextStyle, Pressable, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import spacing from '../constants/spacing';
 import color from '../constants/color';
@@ -10,18 +10,33 @@ import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
 import Spacing from '../constants/spacing';
+import { groupsApi, Group } from '../services/groups';
 
 export default function SelectGroups() {
     const navigation = useAppNavigation();
+    const [groups, setGroups] = useState<Group[]>([]);
+    const [selected, setSelected] = useState<Record<string, boolean>>({});
     const [q, setQ] = useState('');
-    const [checked, setChecked] = useState<Record<string, boolean>>({
-        'Maintenance Staff': true,
-        'Tenants – Tower A': false,
-        'Fire Wardens': false
-    });
 
-    const toggle = (k: string) => setChecked((s) => ({ ...s, [k]: !s[k] }));
-    const selectedCount = Object.values(checked).filter(Boolean).length;
+    useEffect(() => {
+        groupsApi
+            .list()
+            .then(setGroups)
+            .catch((e: any) => Alert.alert('Error', e.message));
+        }, []);
+    
+        const toggle = (id: string) => {
+            setSelected((prev) => ({ ...prev, [id]: !prev[id] }));
+        };
+
+        const onNext = () => {
+            const ids = Object.keys(selected).filter((id) => selected[id]);
+            if (ids.length === 0) {
+                Alert.alert('Select at least one group');
+                return;
+            }
+            navigation.navigate('ScheduleReview', { selectedGroupIds: ids });
+        };
 
     return (
         <View style={styles.container}>
@@ -38,7 +53,48 @@ export default function SelectGroups() {
                 <SearchBar value={q} onChangeText={setQ} placeholder="Search groups…" />
 
                 <View style={{ marginTop: spacing.md }}>
-                    {Object.entries(checked).map(([label, isChecked]) => (
+                    {groups
+                        .filter(g => g.name.toLowerCase().includes(q.toLowerCase()))
+                        .map(g => {
+                            const checked = !!selected[g.id];
+                            return (
+                                <Pressable
+                                    key={g.id}
+                                    onPress={() => toggle(g.id)}
+                                    style={{
+                                        paddingVertical: spacing.md,
+                                        borderBottomWidth: 1,
+                                        borderBottomColor: '#00000012',
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between'
+                                    }}
+                                >
+                                    <View>
+                                        <Text style={{ ...typography.body } as TextStyle}>{g.name}</Text>
+                                        <Text style={{ ...typography.caption, color: '#8E8E8E' } as TextStyle}>
+                                            {(g.members || []).length} members
+                                        </Text>
+                                    </View>
+
+                                    {/* simple checkbox dot */}
+                                    <View style={{
+                                        width: 22, height: 22, borderRadius: 11,
+                                        borderWidth: 2, borderColor: checked ? color.primary : '#CFCFCF',
+                                        alignItems: 'center', justifyContent: 'center'
+                                    }}>
+                                        {checked ? (
+                                            <View style={{
+                                                width: 12, height: 12, borderRadius: 6, backgroundColor: color.primary
+                                            }} />
+                                        ) : null}
+                                    </View>
+                                </Pressable>
+                            );
+                        })
+                    }
+                
+                {/*    {Object.entries(checked).map(([label, isChecked]) => (
                         <CheckboxRow
                             key={label}
                             label={label}
@@ -46,13 +102,12 @@ export default function SelectGroups() {
                             checked={isChecked}
                             onToggle={() => toggle(label)}
                         />
-                    ))}
+                    ))} */}
                 </View>
-                <Text style={styles.helper}>Selected groups: {selectedCount}</Text>
+                {//<Text style={styles.helper}>Selected groups: {selectedCount}</Text>}
+                }
+                <BottomCTA label="Next · Schedule" onPress={() => navigation.navigate('ScheduleReview' as never)} />
             </ScrollView>
-
-            <BottomCTA label="Next · Schedule" onPress={() => navigation.navigate('ScheduleReview' as never)} />
-
             <NavBar
                 onHome={() => navigation.navigate('Dashboard' as never)}
                 onCompose={() => navigation.navigate('Compose' as never)}
