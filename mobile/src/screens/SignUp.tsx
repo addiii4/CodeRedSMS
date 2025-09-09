@@ -6,23 +6,51 @@ import {
     TextInput,
     TouchableOpacity,
     Image,
-    TextStyle
+    TextStyle,
+    Alert
 } from 'react-native';
 import Colors from '../constants/color';
 import Spacing from '../constants/spacing';
 import Typography from '../constants/typography';
 import useAppNavigation from '../hooks/useAppNavigation';
+import { useAuth } from '../state/auth';
 
 export default function SignupScreen() {
     const navigation = useAppNavigation();
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [phone, setBuildingCode] = useState('');
-    const [password, setPassword] = useState('');
+    const { register, ready } = useAuth();
 
-    const handleSignup = () => {
-        console.log('Signup:', { name, email, phone, password });
-        navigation.navigate('Dashboard');
+    const [fullName, setFullName] = useState(''); // not sent yet (noted for later polish)
+    const [email, setEmail] = useState('');
+    const [buildingCode, setBuildingCode] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirm, setConfirm] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSignup = async () => {
+        if (!ready) {
+            Alert.alert('Please wait', 'App is initializing. Try again in a second.');
+            return;
+        }
+        if (!fullName || !email || !buildingCode || !password || !confirm) {
+            Alert.alert('Missing info', 'Please fill all fields.');
+            return;
+        }
+        if (password !== confirm) {
+            Alert.alert('Passwords do not match', 'Please re-enter.');
+            return;
+        }
+        try {
+            setSubmitting(true);
+            console.log('[Signup] starting', { email, buildingCode });
+            await register({ buildingCode, email, password });
+            console.log('[Signup] success, navigating');
+            navigation.navigate('Dashboard');
+        } catch (e: any) {
+            console.log('[Signup] error', e);
+            Alert.alert('Sign up failed', e?.message || 'Please try again.');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -47,34 +75,46 @@ export default function SignupScreen() {
                     style={styles.input}
                     placeholder="Full Name"
                     placeholderTextColor={Colors.greyStroke}
-                    value={name}
-                    onChangeText={setName}
+                    value={fullName}
+                    onChangeText={setFullName}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Email Address"
                     placeholderTextColor={Colors.greyStroke}
+                    autoCapitalize="none"
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"
                 />
                 <TextInput
                     style={styles.input}
-                    placeholder="Building Code"
+                    placeholder="e.g. RED123"
                     placeholderTextColor={Colors.greyStroke}
-                    value={phone}
+                    autoCapitalize="characters"
+                    value={buildingCode}
                     onChangeText={setBuildingCode}
                 />
                 <TextInput
                     style={styles.input}
-                    placeholder="Password"
+                    placeholder="Create Password"
                     placeholderTextColor={Colors.greyStroke}
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry
                 />
-
-                <TouchableOpacity style={styles.button} onPress={handleSignup}>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Confirm Password"
+                    placeholderTextColor={Colors.greyStroke}
+                    value={confirm}
+                    onChangeText={setConfirm}
+                    secureTextEntry
+                />
+                <TouchableOpacity
+                    style={[styles.button, (submitting || !ready) && { opacity: 0.6 }]}
+                    onPress={handleSignup}
+                    disabled={submitting || !ready}>
                     <Text style={styles.buttonText}>Create Account</Text>
                 </TouchableOpacity>
             </View>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextStyle } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextStyle, Alert } from 'react-native';
 import spacing from '../constants/spacing';
 import color from '../constants/color';
 import typography from '../constants/typography';
@@ -8,11 +8,17 @@ import ListRow from '../components/ListRow';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
+import { templatesApi, Template } from '../services/templates';
 
 export default function Templates() {
     const navigation = useAppNavigation();
+    const [data, setData] = useState<Template[]>([]);
+    const load = async () => setData(await templatesApi.list());
     const [q, setQ] = useState('');
 
+    useEffect(() => {
+        load().catch((e) => Alert.alert('Error', e.message));
+    }, []);
     return (
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.content}>
@@ -20,6 +26,19 @@ export default function Templates() {
                 <SearchBar value={q} onChangeText={setQ} placeholder="Search templates…" />
 
                 <View style={{ marginTop: spacing.md }}>
+                    {data.filter(t =>
+                            t.title.toLowerCase().includes(q.toLowerCase()) ||
+                            t.body.toLowerCase().includes(q.toLowerCase())
+                        ).map(t => (
+                            <ListRow
+                                key={t.id}
+                                title={t.title}
+                                meta={`${t.body.length} chars`}
+                                onPress={() => navigation.navigate('TemplatePreview', { title: t.title, body: t.body })}
+                            />
+                        ))
+                    }
+                    {/*
                     <ListRow
                         title="Fire Alarm – Evacuate Now"
                         meta="132 chars"
@@ -43,7 +62,7 @@ export default function Templates() {
                             title: 'Evacuation Drill Reminder',
                             body: 'Reminder: Evacuation drill at 10:30am. Please follow wardens’ instructions.'
                         })}
-                    />
+                    />*/}
                 </View>
 
                 <View style={{ height: spacing.margin }} />

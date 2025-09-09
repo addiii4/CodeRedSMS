@@ -1,12 +1,9 @@
 {
     "compilerOptions": {
-        "jsx": "react",
         "target": "ES2021",
         "module": "CommonJS",
         "moduleResolution": "Node",
         "strict": true,
-        "declaration": false,
-        "sourceMap": true,
         "outDir": "dist",
         "esModuleInterop": true,
         "skipLibCheck": true,

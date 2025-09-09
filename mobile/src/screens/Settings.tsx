@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextStyle } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextStyle, TouchableOpacity } from 'react-native';
 import color from '../constants/color';
 import spacing from '../constants/spacing';
 import typography from '../constants/typography';
@@ -8,16 +8,22 @@ import ToggleRow from '../components/ToggleRow';
 import NavBar from '../components/NavBar';
 import CreditsBadge from '../components/CreditsBadge';
 import useAppNavigation from '../hooks/useAppNavigation';
+import { useAuth } from '../state/auth';
 
 export default function Settings() {
     const navigation = useAppNavigation();
     const [deliveryReceipts, setDeliveryReceipts] = useState(true);
     const [lowCreditAlerts, setLowCreditAlerts] = useState(true);
 
-    const handleSignOut = () => {
-        // TODO: clear auth state, tokens, and reset navigation
-        // navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-    };
+    const { logout } = useAuth();
+
+    const handleSignOut = useCallback(async () => {
+        await logout();
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }], // or 'Splash' if that's your entry
+        });
+    }, [logout, navigation]);
 
     return (
         <View style={styles.container}>
@@ -85,5 +91,17 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#00000010',
         padding: spacing.md, marginBottom: spacing.md
     },
-    sectionLabel: { ...typography.label, color: '#8E8E8E', marginBottom: spacing.sm } as TextStyle
+    sectionLabel: { ...typography.label, color: '#8E8E8E', marginBottom: spacing.sm } as TextStyle,
+    signoutButton: {
+    backgroundColor: color.primary,
+    paddingVertical: spacing.md,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: spacing.lg
+},
+signoutText: {
+    ...typography.body,
+    color: '#fff',
+    fontWeight: '600'
+} as TextStyle
 });

@@ -1,128 +1,145 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
-import { OrgsService } from '../orgs/orgs.service';
 import { JwtService } from '@nestjs/jwt';
-import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
-import { Role } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
+
+type Role = 'admin' | 'editor' | 'viewer';
 
 @Injectable()
 export class AuthService {
-    constructor(
-        private users: UsersService,
-        private orgs: OrgsService,
-        private jwt: JwtService,
-        private prisma: PrismaService
-    ) {}
+    // HOTFIX: direct clients so nothing can be undefined at runtime
+    private readonly prisma = new PrismaClient();
+    private readonly jwt = new JwtService({
+        secret: process.env.JWT_SECRET || 'dev-secret',
+        signOptions: { expiresIn: process.env.JWT_EXPIRES || '15m' },
+    });
 
-    private async signAccess(userId: string, orgId: string, role: Role) {
-        return this.jwt.signAsync({ sub: userId, orgId, role });
+    // no constructor needed anymore
+    // constructor() {}
+    private sign(userId: string, orgId: string, role: Role) {
+        return this.jwt.sign({ sub: userId, orgId, role });
     }
 
-    async login(buildingCode: string, email: string, password: string) {
-        const org = await this.orgs.findByCode(buildingCode);
-        if (!org) throw new UnauthorizedException('Invalid building code');
-
-        const user = await this.users.findByEmail(email);
-        if (!user) throw new UnauthorizedException('Invalid credentials');
-
-        const ok = await argon2.verify(user.passwordHash, password);
-        if (!ok) throw new UnauthorizedException('Invalid credentials');
-
-        const membership = await this.users.findMembership(user.id, org.id);
-        if (!membership) throw new UnauthorizedException('Not a member of this org');
-
-        const accessToken = await this.signAccess(user.id, org.id, membership.role);
-
-        return {
-            accessToken,
-            user: { id: user.id, email: user.email, displayName: user.displayName },
-            org: { id: org.id, code: org.code, name: org.name, credits: org.credits }
-        };
-    }
-
-    // First-time signup on a device
-    async register(buildingCode: string, email: string, password: string, deviceId: string, platform?: string) {
-        const org = await this.orgs.findByCode(buildingCode);
-        if (!org) throw new BadRequestException('Invalid building code');
-
-        // Upsert user
-        const existing = await this.users.findByEmail(email);
-        if (existing) {
-            // Ensure they’re not already in this org
-            const member = await this.users.findMembership(existing.id, org.id);
-            if (!member) {
-                await this.prisma.membership.create({
-                    data: { userId: existing.id, orgId: org.id, role: Role.editor }
-                });
-            }
-            // Update password if needed? (Optional: skip)
+    /**
+     * First-time signup: create/find org, create user, attach membership, bind device
+     */
+    async register(
+        buildingCode: string,
+        email: string,
+        password: string,
+        deviceId: string,
+        platform?: string
+    ) {
+        if (!buildingCode || !email || !password || !deviceId) {
+            throw new BadRequestException('Missing required fields');
         }
 
-        const user = existing ?? await this.prisma.user.create({
-            data: {
-                email,
-                displayName: email.split('@')[0],
-                passwordHash: await argon2.hash(password)
+        // find or create org by building code
+        const org = await this.prisma.organization.upsert({
+            where: { code: buildingCode },
+            update: {},
+            create: {
+                code: buildingCode,
+                name: buildingCode
             }
         });
 
-        // Ensure membership
-        await this.prisma.membership.upsert({
-            where: { userId_orgId: { userId: user.id, orgId: org.id } },
-            update: {},
-            create: { userId: user.id, orgId: org.id, role: Role.editor }
+        // unique email
+        const existing = await this.prisma.user.findUnique({ where: { email } });
+        if (existing) throw new BadRequestException('Email already registered');
+
+        const passwordHash = await bcrypt.hash(password, 10);
+        const user = await this.prisma.user.create({
+            data: {
+                email,
+                passwordHash,
+                displayName: email.split('@')[0]
+            }
         });
 
-        // Register device
+        // first member of org becomes admin
+        const memberCount = await this.prisma.membership.count({ where: { orgId: org.id } });
+        const role: Role = memberCount === 0 ? 'admin' : 'editor';
+
+        await this.prisma.membership.create({
+            data: { userId: user.id, orgId: org.id, role }
+        });
+
+        // bind device to user+org (upsert on (orgId, deviceId))
         await this.prisma.device.upsert({
             where: { orgId_deviceId: { orgId: org.id, deviceId } },
-            update: { userId: user.id, platform, lastSeenAt: new Date() },
-            create: { orgId: org.id, userId: user.id, deviceId, platform }
+            update: { userId: user.id, platform: platform ?? null, lastSeenAt: new Date() },
+            create: { orgId: org.id, userId: user.id, deviceId, platform: platform ?? null }
         });
 
-        const membership = await this.users.findMembership(user.id, org.id);
-        const accessToken = await this.signAccess(user.id, org.id, membership!.role);
-
+        const accessToken = this.sign(user.id, org.id, role);
         return {
             accessToken,
             user: { id: user.id, email: user.email, displayName: user.displayName },
-            org: { id: org.id, code: org.code, name: org.name, credits: org.credits }
+            org: { id: org.id, code: org.code, name: org.name }
         };
     }
 
-    // Subsequent fast login: buildingCode + deviceId
+    /**
+     * Email/password login into a specific org
+     */
+    async login(buildingCode: string, email: string, password: string) {
+        if (!buildingCode || !email || !password) {
+            throw new BadRequestException('Missing required fields');
+        }
+
+        const org = await this.prisma.organization.findUnique({ where: { code: buildingCode } });
+        if (!org) throw new UnauthorizedException('Invalid building code');
+
+        const user = await this.prisma.user.findUnique({ where: { email } });
+        if (!user) throw new UnauthorizedException('Invalid credentials');
+
+        const ok = await bcrypt.compare(password, user.passwordHash);
+        if (!ok) throw new UnauthorizedException('Invalid credentials');
+
+        const membership = await this.prisma.membership.findUnique({
+            where: { userId_orgId: { userId: user.id, orgId: org.id } }
+        });
+        if (!membership) throw new UnauthorizedException('No access to this organization');
+
+        const accessToken = this.sign(user.id, org.id, membership.role as Role);
+        return {
+            accessToken,
+            user: { id: user.id, email: user.email, displayName: user.displayName },
+            org: { id: org.id, code: org.code, name: org.name }
+        };
+    }
+
+    /**
+     * Fast device login (no email/password)
+     */
     async deviceLogin(buildingCode: string, deviceId: string) {
-        const org = await this.orgs.findByCode(buildingCode);
+        if (!buildingCode || !deviceId) {
+            throw new BadRequestException('Missing required fields');
+        }
+
+        const org = await this.prisma.organization.findUnique({ where: { code: buildingCode } });
         if (!org) throw new UnauthorizedException('Invalid building code');
 
         const device = await this.prisma.device.findUnique({
             where: { orgId_deviceId: { orgId: org.id, deviceId } }
         });
-        if (!device || !device.userId) {
-            throw new UnauthorizedException('Device not registered for this organization');
-        }
+        if (!device || !device.userId) throw new UnauthorizedException('Device not registered');
 
-        const membership = await this.users.findMembership(device.userId, org.id);
-        if (!membership) {
-            throw new UnauthorizedException('Not a member');
-        }
-
-        // Update last seen
-        await this.prisma.device.update({
-            where: { orgId_deviceId: { orgId: org.id, deviceId } },
-            data: { lastSeenAt: new Date() }
-        });
-
-        const accessToken = await this.signAccess(device.userId, org.id, membership.role);
-
-        // fetch user for response
         const user = await this.prisma.user.findUnique({ where: { id: device.userId } });
+        if (!user) throw new UnauthorizedException('User not found for device');
 
+        const membership = await this.prisma.membership.findUnique({
+            where: { userId_orgId: { userId: user.id, orgId: org.id } }
+        });
+        if (!membership) throw new UnauthorizedException('No access to this organization');
+
+        const accessToken = this.sign(user.id, org.id, membership.role as Role);
         return {
             accessToken,
-            user: { id: user!.id, email: user!.email, displayName: user!.displayName },
-            org: { id: org.id, code: org.code, name: org.name, credits: org.credits }
+            user: { id: user.id, email: user.email, displayName: user.displayName },
+            org: { id: org.id, code: org.code, name: org.name }
         };
     }
 }

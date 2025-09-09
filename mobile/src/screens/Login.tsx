@@ -8,7 +8,8 @@ import {
     KeyboardAvoidingView,
     Platform,
     Image,
-    TextStyle
+    TextStyle,
+    Alert
 } from 'react-native';
 import useAppNavigation from '../hooks/useAppNavigation';
 
@@ -16,14 +17,22 @@ import Colors from '../constants/color';
 import Spacing from '../constants/spacing';
 import Typography from '../constants/typography';
 import Dashboard from './Dashboard';
+import { useAuth } from '../state/auth';
 
 export default function LoginScreen() {
     const navigation = useAppNavigation();
     const [buildingCode, setBuildingCode] = useState('');
 
-    const handleLogin = () => {
-        console.log('Building code:', buildingCode);
-        navigation.navigate('Dashboard');
+    const { deviceLogin } = useAuth();
+
+    const handleLogin = async () => {
+        try {
+            await deviceLogin({ buildingCode });
+            navigation.navigate('Dashboard');
+        } catch (e: any) {
+            Alert.alert('Login failed', e.message || 'Please sign up on this device first.',
+            );
+        }
     };
 
     const handleSignup = () => {
