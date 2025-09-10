@@ -5,12 +5,23 @@ export type RootStackParamList = {
     Dashboard: undefined;
     // Compose flow
     Compose: { presetTitle?: string; presetBody?: string } | undefined;
-    SelectGroups: { selectedGroupIds?: string[] } | undefined;
-    ScheduleReview: { selectedGroupIds?: string[] } | undefined;
+    SelectGroups: {
+        fromCompose?: boolean;
+        draftTitle?: string;
+        draftBody?: string;
+    } | undefined;
+    ScheduleReview: {
+        title: string;
+        body: string;
+        groupIds: string[];
+        contactIds: string[];
+        adHocNumbers?: string[];
+    };
+    Logs: undefined;
+    LogDetail: { id: string };
     // Template preview
     TemplatePreview: { title: string; body: string };
     // Other
-    Logs: undefined;
     Templates: undefined;
     TemplateEdit: undefined;
     Contacts: undefined;
@@ -26,5 +37,4 @@ export type RootStackParamList = {
     HelpCenter: undefined;
     ContactUs: undefined;
     ContactImport: undefined;
-    LogDetail: { id: string } | undefined;
 };

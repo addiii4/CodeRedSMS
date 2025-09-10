@@ -9,14 +9,22 @@ import CheckboxRow from '../components/CheckboxRow';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
-import Spacing from '../constants/spacing';
 import { groupsApi, Group } from '../services/groups';
+import { useRoute, RouteProp } from '@react-navigation/native';
+import { RootStackParamList } from '../constants/types';
 
 export default function SelectGroups() {
     const navigation = useAppNavigation();
     const [groups, setGroups] = useState<Group[]>([]);
     const [selected, setSelected] = useState<Record<string, boolean>>({});
     const [q, setQ] = useState('');
+    const route = useRoute<RouteProp<RootStackParamList, 'SelectGroups'>>();
+    const draftTitle = route.params?.draftTitle ?? '';
+    const draftBody  = route.params?.draftBody  ?? '';
+
+    const [selectedGroupIds, setSelectedGroupIds]   = useState<Set<string>>(new Set());
+    const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
+    const [adHocNumbers, setAdHocNumbers] = useState<string[]>([]);
 
     useEffect(() => {
         groupsApi
@@ -30,13 +38,19 @@ export default function SelectGroups() {
         };
 
         const onNext = () => {
-            const ids = Object.keys(selected).filter((id) => selected[id]);
-            if (ids.length === 0) {
-                Alert.alert('Select at least one group');
-                return;
-            }
-            navigation.navigate('ScheduleReview', { selectedGroupIds: ids });
-        };
+        const ids = Object.keys(selected).filter(id => selected[id]);
+        if (ids.length === 0) {
+            Alert.alert('Select at least one group');
+            return;
+        }
+        navigation.navigate('ScheduleReview', {
+            title: draftTitle,
+            body: draftBody,
+            groupIds: ids,
+            contactIds: [],        
+            adHocNumbers: [],     
+        });
+    };
 
     return (
         <View style={styles.container}>
@@ -106,7 +120,15 @@ export default function SelectGroups() {
                 </View>
                 {//<Text style={styles.helper}>Selected groups: {selectedCount}</Text>}
                 }
-                <BottomCTA label="Next · Schedule" onPress={() => navigation.navigate('ScheduleReview' as never)} />
+                <BottomCTA label="Next · Schedule" onPress={() =>
+                    navigation.navigate('ScheduleReview', {
+                        title: draftTitle,               // from route.params
+                        body: draftBody,                 // from route.params
+                        groupIds: Array.from(selectedGroupIds),
+                        contactIds: Array.from(selectedContactIds),
+                        adHocNumbers: adHocNumbers.length ? adHocNumbers : [],
+                    })
+                }/>
             </ScrollView>
             <NavBar
                 onHome={() => navigation.navigate('Dashboard' as never)}

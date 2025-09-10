@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Modal, Platform, TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -11,6 +11,8 @@ import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../constants/types';
+import { messagesApi } from '../services/messages';
+import { Alert } from 'react-native';
 
 
 export default function ScheduleReview() {
@@ -21,8 +23,17 @@ export default function ScheduleReview() {
     const [pickerOpen, setPickerOpen] = useState(false);
     const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
     const route = useRoute<RouteProp<RootStackParamList, 'ScheduleReview'>>();
-    const selectedGroupIds = route.params?.selectedGroupIds ?? [];
-
+    const [isScheduled, setIsScheduled] = useState(false);
+    const [dateValue, setDateValue] = useState<Date | null>(null); 
+    
+    const {
+        title = '',
+        body = '',
+        groupIds = [],
+        contactIds = [],
+        adHocNumbers = [],
+    } = route.params ?? {};
+    
     const onChange = (_: any, d?: Date) => {
         // Android fires onChange immediately; iOS updates while spinning
         if (Platform.OS === 'android') setPickerOpen(false);
@@ -108,7 +119,22 @@ export default function ScheduleReview() {
             {/* Bottom CTA above NavBar */}
             <BottomCTA
                 label={mode === 'Send Now' ? 'Send Message' : 'Schedule Message'}
-                onPress={() => navigation.navigate('Logs' as never)}
+                onPress={async () => {
+                try {
+                    const scheduledAtIso = isScheduled && dateValue ? dateValue.toISOString() : null;
+                    await messagesApi.create({
+                        title,
+                        body,
+                        groupIds,
+                        contactIds,
+                        adHocNumbers,
+                        scheduledAt: scheduledAtIso,
+                    });
+                    navigation.navigate('Logs');
+                } catch (e: any) {
+                    Alert.alert('Send failed', e?.message || 'Please try again.');
+                }
+            }}
             />
 
             <NavBar
