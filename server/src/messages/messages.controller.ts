@@ -6,12 +6,12 @@ import { CreateMessageDto } from './dto/create-message.dto';
 
 @Controller('messages')
 export class MessagesController {
+    // DI-free singletons (stable for MVP)
     private readonly jwt = new JwtService({
         secret: process.env.JWT_SECRET || 'dev-secret',
         signOptions: { expiresIn: process.env.JWT_EXPIRES || '15m' }
     });
-
-    constructor(private readonly svc: MessagesService) {}
+    private readonly svc = new MessagesService();
 
     private getAuth(req: any) {
         const auth = req.headers?.authorization || '';
@@ -19,26 +19,25 @@ export class MessagesController {
         if (!token) throw new BadRequestException('Missing token');
         const payload = this.jwt.verify(token) as { sub: string; orgId: string; role: string };
         return { userId: payload.sub, orgId: payload.orgId, role: payload.role };
-        // NOTE: keep in sync with AuthService.sign payload
     }
 
     @Post('estimate')
     async estimate(@Body() dto: EstimateDto) {
-        return this.svc.estimate(dto.body || '');
+        return this.svc.estimate(dto?.body || '');
     }
 
     @Post()
     async create(@Req() req: any, @Body() dto: CreateMessageDto) {
         const { userId, orgId } = this.getAuth(req);
-        const scheduledAt = dto.scheduledAt ? new Date(dto.scheduledAt) : null;
+        const scheduledAt = dto?.scheduledAt ? new Date(dto.scheduledAt) : null;
         return this.svc.createMessage({
             orgId,
             authorId: userId,
-            title: dto.title,
-            body: dto.body,
-            groupIds: dto.groupIds ?? [],
-            contactIds: dto.contactIds ?? [],
-            adHocNumbers: dto.adHocNumbers ?? [],
+            title: dto?.title || '',
+            body: dto?.body || '',
+            groupIds: dto?.groupIds || [],
+            contactIds: dto?.contactIds || [],
+            adHocNumbers: dto?.adHocNumbers || [],
             scheduledAt
         });
     }
