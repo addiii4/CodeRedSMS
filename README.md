@@ -33,8 +33,10 @@ Figma design: https://www.figma.com/design/RtxQ1zUf4Bq66XUO7Y9A7F/Code-Red-SMS?n
 2. **Run the app**
     npx expo start
 
-Adding the backend for the react native app - 
+Currently designing the backend for the react native app - 
 
 1. Added neon database with Prisma
 2. Added Nest.js framework
 3. Added auth using JWT
+4. Contacts and templates now linked to the backend neon DB
+
