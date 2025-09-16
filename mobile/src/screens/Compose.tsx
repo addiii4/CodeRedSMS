@@ -110,7 +110,13 @@ export default function Compose() {
                 )}
             </ScrollView>
 
-            <BottomCTA label="Next · Recipients" onPress={() => navigation.navigate('SelectGroups')} />
+            <BottomCTA label="Next · Recipients" onPress={() =>
+                navigation.navigate('SelectGroups', {
+                    fromCompose: true,
+                    draftTitle: title,
+                    draftBody: body
+                })
+            } />
 
             <NavBar
                 onHome={() => navigation.navigate('Dashboard')}

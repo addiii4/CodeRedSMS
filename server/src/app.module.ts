@@ -8,6 +8,7 @@ import { OrgsModule } from './orgs/orgs.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { GroupsModule } from './groups/groups.module';
 import { TemplatesModule } from './templates/templates.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
     imports: [
@@ -19,7 +20,8 @@ import { TemplatesModule } from './templates/templates.module';
         OrgsModule,
         ContactsModule,
         GroupsModule,
-        TemplatesModule
+        TemplatesModule,
+        MessagesModule
     ]
 })
 export class AppModule {}
