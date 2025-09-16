@@ -40,3 +40,8 @@ Currently designing the backend for the react native app -
 3. Added auth using JWT
 4. Contacts and templates now linked to the backend neon DB
 
+Future milestones - 
+1. SMSGlobal API to send messages
+2. CRUD operations with contacts and templates to go live
+3. Billing and Credits
+4. Org and admin level management
