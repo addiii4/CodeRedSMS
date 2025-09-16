@@ -5,7 +5,6 @@ import spacing from '../constants/spacing';
 import color from '../constants/color';
 import typography from '../constants/typography';
 import SearchBar from '../components/SearchBar';
-import CheckboxRow from '../components/CheckboxRow';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
