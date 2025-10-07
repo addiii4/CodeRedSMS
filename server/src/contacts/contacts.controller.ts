@@ -5,28 +5,31 @@ import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 
-@UseGuards(JwtAuthGuard)
 @Controller('contacts')
 export class ContactsController {
     constructor(private svc: ContactsService) {}
 
+    @UseGuards(JwtAuthGuard)
     @Get()
     list(@CurrentUser() user: ReqUser) {
-        return this.svc.list(user);
+        return this.svc.findAll(user);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Post()
-    create(@CurrentUser() user: ReqUser, @Body() dto: CreateContactDto) {
-        return this.svc.create(user, dto);
+    create(@Body() dto: CreateContactDto, @CurrentUser() user: ReqUser) {
+        return this.svc.create(dto, user);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Patch(':id')
     update(@CurrentUser() user: ReqUser, @Param('id') id: string, @Body() dto: UpdateContactDto) {
-        return this.svc.update(user, id, dto);
+        return this.svc.update(id, dto, user);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Delete(':id')
     remove(@CurrentUser() user: ReqUser, @Param('id') id: string) {
-        return this.svc.remove(user, id);
+        return this.svc.remove(id, user);
     }
 }
