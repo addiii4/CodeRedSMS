@@ -8,27 +8,54 @@ import SearchBar from '../components/SearchBar';
 import ListRow from '../components/ListRow';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
-import useAppNavigation from '../hooks/useAppNavigation';
+import { useNavigation } from '@react-navigation/native';
 import { Contact, contactsApi } from '../services/contacts';
 import { groupsApi, Group } from '../services/groups';
+import { useAuth } from '../state/auth';
+import { useRoute, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type RootStackParamList = {
+  Splash: undefined;
+  Login: undefined;
+  Dashboard: undefined;
+  Compose: undefined;
+  Settings: undefined;
+  GroupDetail: { groupId: string };
+  GroupEdit: undefined;
+  PersonEdit: undefined;
+  Contacts: { refresh?: boolean };
+};
+
+type ContactsRouteParamList = {
+  Contacts: { refresh?: boolean };
+  GroupDetail: { groupId: string };
+};
 
 export default function Contacts() {
-    const navigation = useAppNavigation();
+    type NavigationProps = NativeStackNavigationProp<
+        RootStackParamList,
+        'Contacts'
+    >;
+    const navigation = useNavigation<NavigationProps>();
+    const route = useRoute<RouteProp<RootStackParamList, 'Contacts'>>();
     const [tab, setTab] = useState<'Groups' | 'People'>('Groups');
     const [q, setQ] = useState('');
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [groups, setGroups] = useState<Group[]>([]);
+    const { ready } = useAuth();
 
-    useEffect(() => {
-        load();
-    }, []);
+useEffect(() => {
+    if (!ready) return;
 
-    useEffect(() => {
-      // load groups once on mount
-        groupsApi.list()
-            .then(setGroups)
-            .catch((e: any) => Alert.alert('Error', e.message));
-    }, []);
+    load();
+    groupsApi.list()
+      .then(setGroups)
+      .catch((e: any) => {
+        console.log('❌ Failed to load groups', e.message);
+        Alert.alert('Error', e.message || 'Failed to load groups');
+      });
+}, [ready, route?.params?.refresh]);
 
     const load = async () => {
         try {
@@ -58,7 +85,7 @@ export default function Contacts() {
                                     title={g.name}
                                     meta={`${(g.members || []).length} members`}
                                     onPress={() => {
-                                        navigation.navigate('GroupDetail')// Optional: navigate to a GroupDetail later
+                                        navigation.navigate('GroupDetail', { groupId: g.id });
                                     }}
                                 />
                             ))

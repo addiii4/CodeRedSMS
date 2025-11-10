@@ -1,16 +1,31 @@
-//Add new group
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TextStyle } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TextInput, StyleSheet, TextStyle, Alert } from 'react-native';
 import color from '../constants/color';
 import spacing from '../constants/spacing';
 import typography from '../constants/typography';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
-import useAppNavigation from '../hooks/useAppNavigation';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import HeaderBack from '../components/HeaderBack';
 
+import * as SecureStore from 'expo-secure-store';
+import { useFocusEffect } from '@react-navigation/native';
+
 export default function GroupEdit() {
-    const navigation = useAppNavigation();
+    
+    type RootStackParamList = {
+        Contacts: { refresh?: boolean };
+        GroupEdit: undefined;
+        Dashboard: undefined;
+        Compose: undefined;
+        Settings: undefined;
+    };
+    type NavigationProps = NativeStackNavigationProp<
+        RootStackParamList,
+        'GroupEdit'
+    >;
+    const navigation = useNavigation<NavigationProps>();
     const [name, setName] = useState('');
     const [desc, setDesc] = useState('');
 
@@ -43,7 +58,27 @@ export default function GroupEdit() {
                 <View style={{ height: spacing.margin }} />
             </View>
             <View style={styles.footer}>
-                <BottomCTA label="Save Group" onPress={() => navigation.goBack()} />
+                <BottomCTA label="Save Group" onPress={async () => {
+                    try {
+                        const token = await SecureStore.getItemAsync('codered_access_token');
+                        if (!token) throw new Error('No token found');
+
+                        const res = await fetch('http://localhost:3000/api/groups', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ name, description: desc })
+                        });
+                        if (!res.ok) throw new Error(await res.text());
+                        Alert.alert('Success', 'Group saved successfully!');
+                        navigation.navigate('Contacts', { refresh: true });
+                    } catch (err) {
+                        console.error('Failed to save group:', err);
+                        Alert.alert('Error', 'Could not save group.');
+                    }
+                }} />
                 <NavBar
                     onHome={() => navigation.navigate('Dashboard')}
                     onCompose={() => navigation.navigate('Compose')}

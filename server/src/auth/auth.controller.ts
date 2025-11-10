@@ -1,24 +1,34 @@
-import { Body, Controller, Post, InternalServerErrorException, Inject } from '@nestjs/common';
+import { Body, Controller, Post, Get, UseGuards, Req, Inject } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './jwt.guard';
+import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { DeviceLoginDto } from './dto/device-login.dto';
 
 @Controller('auth')
 export class AuthController {
-    constructor(@Inject(AuthService) private readonly auth: AuthService) {}
+    constructor(@Inject(AuthService) private readonly authService: AuthService) {
+        console.log('✅ AuthService injected:', !!authService);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('me')
+    me(@Req() req: any) {
+        return req.user;
+    }
 
     @Post('register')
-    register(@Body() dto: { buildingCode: string; email: string; password: string; deviceId: string; platform?: string; }) {
-        return this.auth.register(dto.buildingCode, dto.email, dto.password, dto.deviceId, dto.platform);
+    register(@Body() dto: RegisterDto) {
+        return this.authService.register(dto.buildingCode, dto.email, dto.password, dto.deviceId, dto.platform);
     }
 
     @Post('login')
-    login(@Body() dto: { buildingCode: string; email: string; password: string; }) {
-        return this.auth.login(dto.buildingCode, dto.email, dto.password);
+    login(@Body() dto: LoginDto) {
+        return this.authService.login(dto.buildingCode, dto.email, dto.password);
     }
 
     @Post('device-login')
-    deviceLogin(@Body() dto: { buildingCode: string; deviceId: string; }) {
-        return this.auth.deviceLogin(dto.buildingCode, dto.deviceId);
+    deviceLogin(@Body() dto: DeviceLoginDto) {
+        return this.authService.deviceLogin(dto.buildingCode, dto.deviceId);
     }
 }

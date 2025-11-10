@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReqUser } from '../auth/current-user.decorator';
 import { CreateContactDto } from './dto/create-contact.dto';
@@ -8,32 +8,63 @@ import { UpdateContactDto } from './dto/update-contact.dto';
 export class ContactsService {
     constructor(private prisma: PrismaService) {}
 
-    list(user: ReqUser) {
-        return this.prisma.contact.findMany({
+    async findAll(user: ReqUser) {
+        try {
+            return await this.prisma.contact.findMany({
             where: { orgId: user.orgId },
-            orderBy: { createdAt: 'desc' }
-        });
+            });
+        } catch (err) {
+            console.error('Find Contacts Error:', err);
+            throw new InternalServerErrorException('Failed to fetch contacts');
+        }
     }
 
-    create(user: ReqUser, dto: CreateContactDto) {
-        return this.prisma.contact.create({
-            data: { orgId: user.orgId, fullName: dto.fullName, phoneE164: dto.phoneE164 }
-        });
+    async create(createContactDto: CreateContactDto, user: ReqUser) {
+        try {
+            console.log('Creating contact for orgId:', user.orgId);
+            return await this.prisma.contact.create({
+            data: {
+                fullName: createContactDto.name,     // ✅ map to Prisma
+                phoneE164: createContactDto.phone,   // ✅ map to Prisma
+                orgId: user.orgId,
+            },
+            });
+        } catch (err) {
+            console.error('Create Contact Error:', err);
+            throw new InternalServerErrorException('Failed to create contact');
+        }
     }
 
-    async update(user: ReqUser, id: string, dto: UpdateContactDto) {
-        const found = await this.prisma.contact.findFirst({ where: { id, orgId: user.orgId } });
-        if (!found) throw new NotFoundException();
-        return this.prisma.contact.update({
+    async update(id: string, updateContactDto: UpdateContactDto, user: ReqUser) {
+        try {
+            const contact = await this.prisma.contact.findUnique({ where: { id } });
+
+            if (!contact || contact.orgId !== user.orgId) {
+            throw new ForbiddenException('Access denied');
+            }
+
+            return await this.prisma.contact.update({
             where: { id },
-            data: { ...dto }
-        });
+            data: updateContactDto,
+            });
+        } catch (err) {
+            console.error('Update Contact Error:', err);
+            throw new InternalServerErrorException('Failed to update contact');
+        }
     }
 
-    async remove(user: ReqUser, id: string) {
-        const found = await this.prisma.contact.findFirst({ where: { id, orgId: user.orgId } });
-        if (!found) throw new NotFoundException();
-        await this.prisma.contact.delete({ where: { id } });
-        return { ok: true };
+    async remove(id: string, user: ReqUser) {
+        try {
+            const contact = await this.prisma.contact.findUnique({ where: { id } });
+
+            if (!contact || contact.orgId !== user.orgId) {
+            throw new ForbiddenException('Access denied');
+            }
+
+            return await this.prisma.contact.delete({ where: { id } });
+        } catch (err) {
+            console.error('Delete Contact Error:', err);
+            throw new InternalServerErrorException('Failed to delete contact');
+        }
     }
 }
