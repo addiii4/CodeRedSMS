@@ -1,6 +1,9 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString } from 'class-validator';
 
 export class CreateContactDto {
-    name!: string;   // "!" means you promise it will be assigned
-    phone!: string;
+  @IsString()
+  fullName!: string;
+
+  @IsString()
+  phoneE164!: string;
 }
