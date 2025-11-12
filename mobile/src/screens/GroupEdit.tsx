@@ -62,6 +62,10 @@ export default function GroupEdit() {
                     try {
                         const token = await SecureStore.getItemAsync('codered_access_token');
                         if (!token) throw new Error('No token found');
+                        if (!name.trim()) {
+                            Alert.alert('Error', 'Group name is required.');
+                            return;
+                        }
 
                         const res = await fetch('http://localhost:3000/api/groups', {
                             method: 'POST',
