@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import MemberRow from '../components/MemberRow';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { groupsApi, Group } from '../services/groups';
 
 // Properly define param types
@@ -39,9 +39,11 @@ export default function GroupDetail() {
   const route = useRoute<GroupDetailRouteProp>();
   const [group, setGroup] = useState<Group | null>(null);
 
-  useEffect(() => {
-    load();
-  }, [route.params?.groupId]);
+  useFocusEffect(
+    useCallback(() => {
+      load(); // refresh group when screen regains focus
+    }, [route.params?.groupId]),
+  );
 
   const load = async () => {
     try {
