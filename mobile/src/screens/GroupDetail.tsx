@@ -96,6 +96,11 @@ export default function GroupDetail() {
             <Ionicons name="trash" size={20} color="red" />
           </Pressable>
         </View>
+        {group?.description ? (
+          <View style={styles.descCard}>
+            <Text style={styles.descText}>{group.description}</Text>
+          </View>
+        ) : null}
 
         <View style={styles.card}>
           <Text style={styles.meta}>Members</Text>
@@ -114,7 +119,11 @@ export default function GroupDetail() {
 
       <BottomCTA
         label="Add Member"
-        onPress={() => navigation.navigate('PersonEdit', { groupId: route.params.groupId } as never)}
+        onPress={() =>
+          navigation.navigate('PersonEdit', {
+            groupId: route.params.groupId,
+          } as never)
+        }
       />
 
       <NavBar
@@ -154,6 +163,18 @@ const styles = StyleSheet.create({
     borderColor: '#00000010',
     padding: spacing.md,
   },
+  descCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#00000010',
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  descText: {
+    ...typography.body,
+    color: color.text,
+  } as TextStyle,
   meta: {
     ...typography.label,
     color: '#8E8E8E',
