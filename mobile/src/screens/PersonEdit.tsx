@@ -33,6 +33,7 @@ export default function PersonEdit() {
   const groupId = route.params?.groupId;
 
   const [mode, setMode] = useState<Mode>('new');
+  const [saving, setSaving] = useState(false);
 
   // New contact fields
   const [name, setName] = useState('');
@@ -78,6 +79,8 @@ export default function PersonEdit() {
   };
 
   const saveNewContactAndMaybeLink = async () => {
+    if (saving) return;
+
     if (!name.trim()) {
       Alert.alert('Validation', 'Full name is required.');
       return;
@@ -86,6 +89,8 @@ export default function PersonEdit() {
       Alert.alert('Validation', 'Phone number is required.');
       return;
     }
+
+    setSaving(true);
 
     try {
       const created = await contactsApi.create({
@@ -105,6 +110,8 @@ export default function PersonEdit() {
     } catch (e: any) {
       console.error('Save Member Error:', e);
       Alert.alert('Error', e.message || 'Failed to save contact');
+    } finally {
+      setSaving(false);
     }
   };
 
