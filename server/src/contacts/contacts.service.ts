@@ -24,8 +24,8 @@ export class ContactsService {
             console.log('Creating contact for orgId:', user.orgId);
             return await this.prisma.contact.create({
             data: {
-                fullName: createContactDto.name,     // ✅ map to Prisma
-                phoneE164: createContactDto.phone,   // ✅ map to Prisma
+                fullName: createContactDto.fullName.trim(),
+                phoneE164: createContactDto.phoneE164.trim(),
                 orgId: user.orgId,
             },
             });

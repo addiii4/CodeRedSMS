@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextStyle, Alert } from 'react-native';
 import spacing from '../constants/spacing';
 import color from '../constants/color';
@@ -8,7 +8,7 @@ import SearchBar from '../components/SearchBar';
 import ListRow from '../components/ListRow';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Contact, contactsApi } from '../services/contacts';
 import { groupsApi, Group } from '../services/groups';
 import { useAuth } from '../state/auth';
@@ -45,17 +45,27 @@ export default function Contacts() {
     const [groups, setGroups] = useState<Group[]>([]);
     const { ready } = useAuth();
 
-useEffect(() => {
-    if (!ready) return;
+    useFocusEffect(
+    useCallback(() => {
+        if (!ready) return;
 
-    load();
-    groupsApi.list()
-      .then(setGroups)
-      .catch((e: any) => {
-        console.log('❌ Failed to load groups', e.message);
-        Alert.alert('Error', e.message || 'Failed to load groups');
-      });
-}, [ready, route?.params?.refresh]);
+        // Fetch groups and contacts fresh on every focus
+        groupsApi
+        .list()
+        .then(setGroups)
+        .catch((e: any) => {
+            console.log('❌ Failed to load groups', e.message);
+            Alert.alert('Error', e.message || 'Failed to load groups');
+        });
+
+        contactsApi
+        .list()
+        .then(setContacts)
+        .catch((e: any) => {
+            Alert.alert('Error', 'Failed to load contacts');
+        });
+    }, [ready]),
+    );
 
     const load = async () => {
         try {
