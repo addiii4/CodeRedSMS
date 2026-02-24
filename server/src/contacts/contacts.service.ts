@@ -61,7 +61,8 @@ export class ContactsService {
             throw new ForbiddenException('Access denied');
             }
 
-            return await this.prisma.contact.delete({ where: { id } });
+            await this.prisma.contact.delete({ where: { id } });
+            return { ok: true };
         } catch (err) {
             console.error('Delete Contact Error:', err);
             throw new InternalServerErrorException('Failed to delete contact');

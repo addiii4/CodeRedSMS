@@ -1,3 +1,5 @@
+import { Contact } from "../services/contacts";
+
 export type RootStackParamList = {
     Splash: undefined;
     Login: undefined;
@@ -24,9 +26,10 @@ export type RootStackParamList = {
     // Other
     Templates: undefined;
     TemplateEdit: undefined;
-    Contacts: undefined;
-    GroupDetail: undefined;
-    PersonEdit: undefined;
+    Contacts: { refresh?: boolean } | undefined;
+    ContactDetail: { contact: Contact };
+    GroupDetail: { groupId: string };
+    PersonEdit: { groupId?: string } | undefined;
     GroupEdit: undefined;
     BuyCredits: undefined;
     Settings: undefined;
