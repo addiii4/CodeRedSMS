@@ -16,20 +16,6 @@ import { useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../constants/types';
 
-// const route = useRoute<RouteProp<RootStackParamList, 'Contacts'>>();
-
-// type RootStackParamList = {
-//   Splash: undefined;
-//   Login: undefined;
-//   Dashboard: undefined;
-//   Compose: undefined;
-//   Settings: undefined;
-//   GroupDetail: { groupId: string };
-//   GroupEdit: undefined;
-//   PersonEdit: undefined;
-//   Contacts: { refresh?: boolean };
-// };
-
 type ContactsRouteParamList = {
   Contacts: { refresh?: boolean };
   GroupDetail: { groupId: string };
