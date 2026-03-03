@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 
 export type ReqUser = {
+    userId: string;
     sub: string;
     email?: string;
     role?: string;

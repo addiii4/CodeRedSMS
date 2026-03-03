@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { SmsGlobalClient } from '../smsglobal/smsglobal.client';
 
 type Role = 'admin' | 'editor' | 'viewer';
 
@@ -13,7 +14,10 @@ function countSegments(body: string): number {
 
 @Injectable()
 export class MessagesService {
-    private readonly prisma = new PrismaClient();
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly smsglobal: SmsGlobalClient
+    ) {}
 
     async estimate(body: string) {
         const segments = countSegments(body || '');
