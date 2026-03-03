@@ -26,9 +26,10 @@ export const CurrentUser = createParamDecorator((_data: unknown, ctx: ExecutionC
     }
 
     return {
+        userId: sub,  
         sub,
         email: u.email,
-        role:  u.role,
+        role: u.role,
         orgId,
     };
 });

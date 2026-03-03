@@ -134,6 +134,35 @@ export class MessagesService {
             return message;
         });
 
+        try {
+            for (const phone of recipientPhones) {
+                await this.smsglobal.sendSms(phone, body);
+            }
+
+            await this.prisma.message.update({
+                where: { id: result.id },
+                data: { status: 'sent' }
+            });
+
+            await this.prisma.messageRecipient.updateMany({
+                where: { messageId: result.id },
+                data: { status: 'sent' }
+            });
+
+            } catch (err) {
+            await this.prisma.message.update({
+                where: { id: result.id },
+                data: { status: 'failed' }
+            });
+
+            await this.prisma.messageRecipient.updateMany({
+                where: { messageId: result.id },
+                data: { status: 'failed' }
+            });
+
+            throw err;
+        }
+
         return { id: result.id, recipients: recipientPhones.length, segments: segs, cost: totalCost };
     }
 
