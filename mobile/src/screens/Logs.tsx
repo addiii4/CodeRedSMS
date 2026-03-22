@@ -50,15 +50,26 @@ export default function Logs() {
 
     const visibleItems = useMemo(() => {
         const needle = q.trim().toLowerCase();
+
         return items
-        .filter((m) =>
-            filter === 'All'
-            ? true
-            : m.status.toLowerCase() === filter.toLowerCase(),
-        )
-        .filter((m) => (needle ? m.title.toLowerCase().includes(needle) : true));
+            .filter((m) => {
+            if (filter === 'All') return true;
+            if (filter === 'Delivered') return m.status === 'sent';
+            if (filter === 'Failed') return m.status === 'failed';
+            if (filter === 'Scheduled') return !!m.scheduledAt;
+            return true;
+            })
+            .filter((m) =>
+            needle ? m.title.toLowerCase().includes(needle) : true,
+            );
     }, [items, q, filter]);
 
+    const getStatusColor = (item: LogItem) => {
+        if (item.status === 'sent') return '#2E7D32';
+        if (item.status === 'failed') return '#C62828';
+        if (item.scheduledAt) return '#EF6C00';
+        return '#8E8E8E';
+    };
     return (
         <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.content}>
@@ -82,10 +93,10 @@ export default function Logs() {
             <View style={{ marginTop: spacing.md }}>
             {visibleItems.map((m) => (
                 <ListRow
-                key={m.id}
-                title={m.title}
-                meta={`${m.status} · ${new Date(m.createdAt).toLocaleString()}`}
-                onPress={() => navigation.navigate('LogDetail', { id: m.id })}
+                    key={m.id}
+                    title={m.title}
+                    meta={`${m.status === 'sent' ? 'Delivered' : m.scheduledAt ? 'Scheduled' : m.status} · ${new Date(m.createdAt).toLocaleString()}`}
+                    onPress={() => navigation.navigate('LogDetail', { id: m.id })}
                 />
             ))}
             </View>
