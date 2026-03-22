@@ -1,11 +1,10 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     ScrollView,
     TextStyle,
-    Alert,
 } from 'react-native';
 import spacing from '../constants/spacing';
 import color from '../constants/color';
@@ -16,6 +15,9 @@ import ListRow from '../components/ListRow';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
 import { messagesApi } from '../services/messages';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+
 
 type LogItem = {
     id: string;
@@ -33,16 +35,18 @@ export default function Logs() {
     const [filter, setFilter] = useState<Filter>('All');
     const [items, setItems] = useState<LogItem[]>([]);
 
-    useEffect(() => {
-        (async () => {
-        try {
-            const res = await messagesApi.list(); // expected: { items: LogItem[] }
-            setItems(res.items || []);
-        } catch (e: any) {
-            Alert.alert('Error', e.message);
-        }
-        })();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            messagesApi
+            .list()
+            .then((res) => {
+                setItems(res.items);
+            })
+            .catch((e: any) => {
+                console.error('Load Logs Error:', e);
+            });
+        }, []),
+    );
 
     const visibleItems = useMemo(() => {
         const needle = q.trim().toLowerCase();

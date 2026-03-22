@@ -29,7 +29,7 @@ export default function LogDetail() {
     useEffect(() => {
         (async () => {
             try {
-                const res = await messagesApi.get(id);
+                const res = await messagesApi.detail(id);
                 setData(res);
             } catch (e: any) {
                 Alert.alert('Error', e.message);
