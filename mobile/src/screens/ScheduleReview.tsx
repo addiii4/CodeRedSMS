@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ import useAppNavigation from '../hooks/useAppNavigation';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../constants/types';
 import { messagesApi } from '../services/messages';
+import { groupsApi } from '../services/groups';
 
 export default function ScheduleReview() {
   const navigation = useAppNavigation();
@@ -32,6 +33,7 @@ export default function ScheduleReview() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
   const [sending, setSending] = useState(false);
+  const [realRecipientCount, setRealRecipientCount] = useState(0);
 
   const {
     title = '',
@@ -41,6 +43,41 @@ export default function ScheduleReview() {
     adHocNumbers = [],
   } = route.params ?? {};
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadRecipientCount = async () => {
+      try {
+        const groups = await groupsApi.list();
+
+        const selectedGroups = groups.filter((g) => groupIds.includes(g.id));
+
+        const memberContactIds = new Set<string>();
+        selectedGroups.forEach((g) => {
+          (g.members || []).forEach((m) => {
+            if (m.contact?.id) memberContactIds.add(m.contact.id);
+          });
+        });
+
+        contactIds.forEach((id) => memberContactIds.add(id));
+
+        const total =
+          memberContactIds.size + adHocNumbers.filter((n) => n.trim()).length;
+
+        if (mounted) setRealRecipientCount(total);
+      } catch (e) {
+        if (mounted)
+          setRealRecipientCount(contactIds.length + adHocNumbers.length);
+      }
+    };
+
+    loadRecipientCount();
+
+    return () => {
+      mounted = false;
+    };
+  }, [groupIds, contactIds, adHocNumbers]);
+  
   const onChange = (_: any, d?: Date) => {
     if (Platform.OS === 'android') setPickerOpen(false);
     if (d) setDate(d);
@@ -131,8 +168,8 @@ export default function ScheduleReview() {
         <View style={styles.card}>
           <Text style={styles.meta}>Recipients</Text>
           <Text style={styles.body}>
-            {groupIds.length} groups · {contactIds.length + adHocNumbers.length}{' '}
-            contacts
+            {groupIds.length} groups · {realRecipientCount} recipient
+            {realRecipientCount === 1 ? '' : 's'}
           </Text>
           <Text
             style={styles.link}
@@ -159,7 +196,10 @@ export default function ScheduleReview() {
         <View style={styles.card}>
           <Text style={styles.meta}>Credits (estimated)</Text>
           <Text style={styles.body}>
-            {estimatedSegments} segment(s) per recipient
+            {estimatedSegments} segment{estimatedSegments === 1 ? '' : 's'} ×{' '}
+            {realRecipientCount} recipient{realRecipientCount === 1 ? '' : 's'}{' '}
+            · ~{estimatedSegments * realRecipientCount} credit
+            {estimatedSegments * realRecipientCount === 1 ? '' : 's'}
           </Text>
         </View>
 
