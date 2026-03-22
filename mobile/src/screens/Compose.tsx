@@ -110,13 +110,20 @@ export default function Compose() {
                 )}
             </ScrollView>
 
-            <BottomCTA label="Next · Recipients" onPress={() =>
-                navigation.navigate('SelectGroups', {
+            <BottomCTA
+                label="Next · Recipients"
+                onPress={() => {
+                    if (!title.trim() || !body.trim()) {
+                    return; // block navigation silently (no Alert as requested)
+                    }
+
+                    navigation.navigate('SelectGroups', {
                     fromCompose: true,
                     draftTitle: title,
-                    draftBody: body
-                })
-            } />
+                    draftBody: body,
+                    });
+                }}
+            />
 
             <NavBar
                 onHome={() => navigation.navigate('Dashboard')}
