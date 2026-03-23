@@ -37,14 +37,24 @@ export default function Logs() {
 
     useFocusEffect(
         useCallback(() => {
-            messagesApi
-            .list()
-            .then((res) => {
-                setItems(res.items);
-            })
-            .catch((e: any) => {
+            let active = true;
+
+            const load = async () => {
+            try {
+                const res = await messagesApi.list();
+                if (active) setItems(res.items);
+            } catch (e) {
                 console.error('Load Logs Error:', e);
-            });
+            }
+            };
+
+            load();
+            const interval = setInterval(load, 5000);
+
+            return () => {
+            active = false;
+            clearInterval(interval);
+            };
         }, []),
     );
 
