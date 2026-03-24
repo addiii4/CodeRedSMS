@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 
 export type ReqUser = {
+    userId: string;
     sub: string;
     email?: string;
     role?: string;
@@ -25,9 +26,10 @@ export const CurrentUser = createParamDecorator((_data: unknown, ctx: ExecutionC
     }
 
     return {
+        userId: sub,  
         sub,
         email: u.email,
-        role:  u.role,
+        role: u.role,
         orgId,
     };
 });

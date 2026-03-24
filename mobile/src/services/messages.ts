@@ -20,9 +20,21 @@ export const messagesApi = {
     estimate: async (body: string): Promise<{ segments: number }> => {
         return api.post('/messages/estimate', { body });
     },
-    create: async (payload: CreateMessagePayload): Promise<CreateMessageResponse> => {
-        return api.post('/messages', payload);
-    },
+    create: (payload: {
+    title: string;
+    body: string;
+    groupIds?: string[];
+    contactIds?: string[];
+    adHocNumbers?: string[];
+    scheduledAt?: string | null;
+    }) =>
+        api.post<{
+        id: string;
+        recipients: number;
+        segments: number;
+        cost: number;
+        }>('/messages', payload),
+        
     list: async (): Promise<{ items: { id: string; title: string; status: string; createdAt: string; scheduledAt: string | null }[] }> => {
         return api.get('/messages');
     },
@@ -37,5 +49,16 @@ export const messagesApi = {
         breakdown: Record<string, number>;
     }> => {
         return api.get(`/messages/${id}`);
-    }
+    },
+    detail: async (id: string): Promise<{
+        title: string;
+        body: string;
+        status: string;
+        recipients: number;
+        createdAt: string;
+        scheduledAt: string | null;
+        breakdown: Record<string, number>;
+        }> => {
+        return api.get(`/messages/${id}`);
+        }
 };

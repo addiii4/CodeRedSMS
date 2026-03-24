@@ -1,5 +1,15 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Modal, Platform, TextStyle } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Modal,
+  Platform,
+  TextStyle,
+  Alert,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import spacing from '../constants/spacing';
@@ -12,289 +22,410 @@ import useAppNavigation from '../hooks/useAppNavigation';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../constants/types';
 import { messagesApi } from '../services/messages';
-import { Alert } from 'react-native';
-
+import { groupsApi } from '../services/groups';
 
 export default function ScheduleReview() {
-    const navigation = useAppNavigation();
+  const navigation = useAppNavigation();
+  const route = useRoute<RouteProp<RootStackParamList, 'ScheduleReview'>>();
 
-    const [mode, setMode] = useState<'Send Now' | 'Schedule'>('Send Now');
-    const [date, setDate] = useState<Date>(new Date());
-    const [pickerOpen, setPickerOpen] = useState(false);
-    const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
-    const route = useRoute<RouteProp<RootStackParamList, 'ScheduleReview'>>();
-    const [isScheduled, setIsScheduled] = useState(false);
-    const [dateValue, setDateValue] = useState<Date | null>(null); 
-    
-    const {
-        title = '',
-        body = '',
-        groupIds = [],
-        contactIds = [],
-        adHocNumbers = [],
-    } = route.params ?? {};
-    
-    const onChange = (_: any, d?: Date) => {
-        // Android fires onChange immediately; iOS updates while spinning
-        if (Platform.OS === 'android') setPickerOpen(false);
-        if (d) setDate(d);
+  const [mode, setMode] = useState<'Send Now' | 'Schedule'>('Send Now');
+  const [date, setDate] = useState<Date>(new Date());
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
+  const [sending, setSending] = useState(false);
+  const [realRecipientCount, setRealRecipientCount] = useState(0);
+
+  const {
+    title = '',
+    body = '',
+    groupIds = [],
+    contactIds = [],
+    adHocNumbers = [],
+  } = route.params ?? {};
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadRecipientCount = async () => {
+      try {
+        const groups = await groupsApi.list();
+
+        const selectedGroups = groups.filter((g) => groupIds.includes(g.id));
+
+        const memberContactIds = new Set<string>();
+        selectedGroups.forEach((g) => {
+          (g.members || []).forEach((m) => {
+            if (m.contact?.id) memberContactIds.add(m.contact.id);
+          });
+        });
+
+        contactIds.forEach((id) => memberContactIds.add(id));
+
+        const total =
+          memberContactIds.size + adHocNumbers.filter((n) => n.trim()).length;
+
+        if (mounted) setRealRecipientCount(total);
+      } catch (e) {
+        if (mounted)
+          setRealRecipientCount(contactIds.length + adHocNumbers.length);
+      }
     };
 
-    const openPicker = (m: 'date' | 'time') => {
-        setPickerMode(m);
-        setPickerOpen(true);
+    loadRecipientCount();
+
+    return () => {
+      mounted = false;
     };
+  }, [groupIds, contactIds, adHocNumbers]);
+  
+  const onChange = (_: any, d?: Date) => {
+    if (Platform.OS === 'android') setPickerOpen(false);
+    if (d) setDate(d);
+  };
 
-    return (
-        <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
-                {/* Header with Back */}
-                <View style={styles.topRow}>
-                    <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-                        <Ionicons name="chevron-back" size={24} color={color.text} />
-                    </Pressable>
-                    <Text style={styles.header}>Schedule & Review</Text>
-                    <View style={{ width: 24 }} />
-                </View>
+  const openPicker = (m: 'date' | 'time') => {
+    setPickerMode(m);
+    setPickerOpen(true);
+  };
 
-                {/* Summary Cards */}
-                <View style={styles.card}>
-                    <Text style={styles.meta}>Recipients</Text>
-                    <Text style={styles.body}>3 groups · 160 people</Text>
-                    <Text style={styles.link} onPress={() => navigation.navigate('SelectGroups' as never)}>Edit</Text>
-                </View>
+  const charCount = body.length;
+  const estimatedSegments = charCount <= 160 ? 1 : Math.ceil(charCount / 153);
+  const estimatedRecipients =
+    groupIds.length + contactIds.length + adHocNumbers.length;
 
-                <View style={styles.card}>
-                    <Text style={styles.meta}>Message</Text>
-                    <Text style={styles.body} numberOfLines={2}>
-                        Fire Alarm – Evacuate Now. Please proceed to the nearest exit and assemble at the designated area.
-                    </Text>
-                    <Text style={styles.subMeta}>148 chars</Text>
-                    <Text style={styles.link} onPress={() => navigation.navigate('Compose' as never)}>Edit</Text>
-                </View>
+  const handleSend = async () => {
+    if (sending) return;
 
-                <View style={styles.card}>
-                    <Text style={styles.meta}>Credits (estimated)</Text>
-                    <Text style={styles.body}>1 credit / 160 chars · ~1 credit</Text>
-                </View>
+    if (!title.trim()) {
+      Alert.alert('Validation', 'Message title is required.');
+      return;
+    }
 
-                {/* When to send */}
-                <Text style={styles.sectionTitle}>When to send</Text>
-                <SegmentedControl
-                    segments={['Send Now', 'Schedule']}
-                    value={mode}
-                    onChange={(v) => setMode(v as any)}
-                    style={{ marginTop: spacing.sm }}
-                />
+    if (!body.trim()) {
+      Alert.alert('Validation', 'Message body is required.');
+      return;
+    }
 
-                {mode === 'Schedule' && (
-                    <View style={styles.scheduleBlock}>
-                        <View style={styles.scheduleRow}>
-                            <Text style={styles.scheduleLabel}>Date & Time</Text>
-                            <Text style={styles.scheduleHint}>
-                                {date.toLocaleDateString()} · {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </Text>
-                        </View>
+    if (
+      groupIds.length === 0 &&
+      contactIds.length === 0 &&
+      adHocNumbers.length === 0
+    ) {
+      Alert.alert('Validation', 'Please select at least one recipient.');
+      return;
+    }
 
-                        <View style={styles.inlinePickers}>
-                            <Pressable style={styles.pill} onPress={() => openPicker('date')}>
-                                <Text style={styles.pillText}>
-                                    {date.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}
-                                </Text>
-                            </Pressable>
-                            <Pressable style={styles.pill} onPress={() => openPicker('time')}>
-                                <Text style={styles.pillText}>
-                                    {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </Text>
-                            </Pressable>
-                        </View>
+    try {
+      setSending(true);
 
-                        <Text style={styles.helperText}>
-                            Times shown in your device timezone. Delivery may vary by carrier availability.
-                        </Text>
-                    </View>
-                )}
-            </ScrollView>
+      const scheduledAtIso = mode === 'Schedule' ? date.toISOString() : null;
 
-            {/* Bottom CTA above NavBar */}
-            <BottomCTA
-                label={mode === 'Send Now' ? 'Send Message' : 'Schedule Message'}
-                onPress={async () => {
-                try {
-                    const scheduledAtIso = isScheduled && dateValue ? dateValue.toISOString() : null;
-                    await messagesApi.create({
-                        title,
-                        body,
-                        groupIds,
-                        contactIds,
-                        adHocNumbers,
-                        scheduledAt: scheduledAtIso,
-                    });
-                    navigation.navigate('Logs');
-                } catch (e: any) {
-                    Alert.alert('Send failed', e?.message || 'Please try again.');
-                }
-            }}
-            />
+      const res = await messagesApi.create({
+        title,
+        body,
+        groupIds,
+        contactIds,
+        adHocNumbers,
+        scheduledAt: scheduledAtIso,
+      });
 
-            <NavBar
-                onHome={() => navigation.navigate('Dashboard' as never)}
-                onCompose={() => navigation.navigate('Compose' as never)}
-                onMenu={() => navigation.navigate('Settings' as never)}
-                disableCompose 
-            />
+      Alert.alert(
+        mode === 'Send Now' ? 'Message Sent' : 'Message Scheduled',
+        `${res.recipients} recipients • ${res.segments} segment(s) • ${res.cost} credit(s)`,
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('Logs'),
+          },
+        ],
+      );
+    } catch (e: any) {
+      console.error('Send Message Error:', e);
 
-            {/* Modal Date/Time Picker to avoid layout jumps */}
-            <Modal transparent visible={pickerOpen} animationType="slide" onRequestClose={() => setPickerOpen(false)}>
-                <View style={styles.modalBackdrop}>
-                    <View style={styles.modalSheet}>
-                        <Text style={styles.modalTitle}>Select {pickerMode === 'date' ? 'Date' : 'Time'}</Text>
-                        <DateTimePicker
-                            value={date}
-                            mode={pickerMode}
-                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                            onChange={onChange}
-                            style={{ alignSelf: 'stretch' }}
-                        />
-                        <Pressable onPress={() => setPickerOpen(false)} style={styles.modalDone}>
-                            <Text style={styles.modalDoneText}>Done</Text>
-                        </Pressable>
-                    </View>
-                </View>
-            </Modal>
+      const msg = e?.message || e?.error || 'Please try again.';
+
+      if (msg.toLowerCase().includes('insufficient credits')) {
+        Alert.alert('Insufficient Credits');
+      } else {
+        Alert.alert('Send failed', msg);
+      }
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.topRow}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+            <Ionicons name="chevron-back" size={24} color={color.text} />
+          </Pressable>
+          <Text style={styles.header}>Schedule & Review</Text>
+          <View style={{ width: 24 }} />
         </View>
-    );
+
+        <View style={styles.card}>
+          <Text style={styles.meta}>Recipients</Text>
+          <Text style={styles.body}>
+            {groupIds.length} groups · {realRecipientCount} recipient
+            {realRecipientCount === 1 ? '' : 's'}
+          </Text>
+          <Text
+            style={styles.link}
+            onPress={() => navigation.navigate('SelectGroups' as never)}
+          >
+            Edit
+          </Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.meta}>Message</Text>
+          <Text style={styles.body} numberOfLines={4}>
+            {body || 'No message entered'}
+          </Text>
+          <Text style={styles.subMeta}>{charCount} chars</Text>
+          <Text
+            style={styles.link}
+            onPress={() => navigation.navigate('Compose' as never)}
+          >
+            Edit
+          </Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.meta}>Credits (estimated)</Text>
+          <Text style={styles.body}>
+            {estimatedSegments} segment{estimatedSegments === 1 ? '' : 's'} ×{' '}
+            {realRecipientCount} recipient{realRecipientCount === 1 ? '' : 's'}{' '}
+            · ~{estimatedSegments * realRecipientCount} credit
+            {estimatedSegments * realRecipientCount === 1 ? '' : 's'}
+          </Text>
+        </View>
+
+        <Text style={styles.sectionTitle}>When to send</Text>
+        <SegmentedControl
+          segments={['Send Now', 'Schedule']}
+          value={mode}
+          onChange={(v) => setMode(v as any)}
+          style={{ marginTop: spacing.sm }}
+        />
+
+        {mode === 'Schedule' && (
+          <View style={styles.scheduleBlock}>
+            <View style={styles.scheduleRow}>
+              <Text style={styles.scheduleLabel}>Date & Time</Text>
+              <Text style={styles.scheduleHint}>
+                {date.toLocaleDateString()} ·{' '}
+                {date.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </Text>
+            </View>
+
+            <View style={styles.inlinePickers}>
+              <Pressable style={styles.pill} onPress={() => openPicker('date')}>
+                <Text style={styles.pillText}>
+                  {date.toLocaleDateString(undefined, {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </Text>
+              </Pressable>
+              <Pressable style={styles.pill} onPress={() => openPicker('time')}>
+                <Text style={styles.pillText}>
+                  {date.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Text>
+              </Pressable>
+            </View>
+
+            <Text style={styles.helperText}>
+              Times shown in your device timezone. Delivery may vary by carrier
+              availability.
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      <BottomCTA
+        label={
+          sending
+            ? 'Sending...'
+            : mode === 'Send Now'
+              ? 'Send Message'
+              : 'Schedule Message'
+        }
+        onPress={handleSend}
+      />
+
+      <NavBar
+        onHome={() => navigation.navigate('Dashboard' as never)}
+        onCompose={() => navigation.navigate('Compose' as never)}
+        onMenu={() => navigation.navigate('Settings' as never)}
+        disableCompose
+      />
+
+      <Modal
+        transparent
+        visible={pickerOpen}
+        animationType="slide"
+        onRequestClose={() => setPickerOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>
+              Select {pickerMode === 'date' ? 'Date' : 'Time'}
+            </Text>
+            <DateTimePicker
+              value={date}
+              mode={pickerMode}
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={onChange}
+              style={{ alignSelf: 'stretch' }}
+            />
+            <Pressable
+              onPress={() => setPickerOpen(false)}
+              style={styles.modalDone}
+            >
+              <Text style={styles.modalDoneText}>Done</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: color.background
-    },
-    content: {
-        paddingHorizontal: spacing.lg,
-        paddingBottom: 56 + 72 + spacing.md
-    },
-    topRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: spacing.margin,
-        marginBottom: spacing.md
-    },
-    back: {
-        width: 24,
-        height: 24,
-        justifyContent: 'center',
-        marginRight: spacing.sm
-    },
-    header: {
-        ...typography.title,
-        flex: 1,
-        textAlign: 'left'
-    } as TextStyle,
+  container: { flex: 1, backgroundColor: color.background },
+  content: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: 56 + 72 + spacing.md,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.margin,
+    marginBottom: spacing.md,
+  },
+  back: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  header: {
+    ...typography.title,
+    flex: 1,
+    textAlign: 'left',
+  } as TextStyle,
 
-    card: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#00000010',
-        padding: spacing.md,
-        marginBottom: spacing.md
-    },
-    meta: {
-        ...typography.label,
-        color: '#8E8E8E',
-        marginBottom: 4
-    } as TextStyle,
-    body: {
-        ...typography.body
-    } as TextStyle,
-    subMeta: {
-        ...typography.label,
-        color: '#8E8E8E',
-        marginTop: 4
-    } as TextStyle,
-    link: {
-        ...typography.label,
-        color: color.primary,
-        fontWeight: 600,
-        marginTop: spacing.sm
-    } as TextStyle,
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#00000010',
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  meta: {
+    ...typography.label,
+    color: '#8E8E8E',
+    marginBottom: 4,
+  } as TextStyle,
+  body: {
+    ...typography.body,
+  } as TextStyle,
+  subMeta: {
+    ...typography.label,
+    color: '#8E8E8E',
+    marginTop: 4,
+  } as TextStyle,
+  link: {
+    ...typography.label,
+    color: color.primary,
+    fontWeight: 600,
+    marginTop: spacing.sm,
+  } as TextStyle,
 
-    sectionTitle: {
-        ...typography.sectionTitle,
-        marginTop: spacing.lg
-    } as TextStyle,
+  sectionTitle: {
+    ...typography.sectionTitle,
+    marginTop: spacing.lg,
+  } as TextStyle,
 
-    scheduleBlock: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#00000010',
-        padding: spacing.md,
-        marginTop: spacing.md
-    },
-    scheduleRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingBottom: spacing.sm,
-        borderBottomWidth: 1,
-        borderBottomColor: '#00000010'
-    },
-    scheduleLabel: {
-        ...typography.body
-    } as TextStyle,
-    scheduleHint: {
-        ...typography.label,
-        color: '#8E8E8E'
-    } as TextStyle,
-    inlinePickers: {
-        flexDirection: 'row',
-        gap: spacing.md,
-        marginTop: spacing.md
-    },
-    pill: {
-        flex: 1,
-        backgroundColor: '#F6F6F6',
-        paddingVertical: spacing.md,
-        borderRadius: 12,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#00000010'
-    },
-    pillText: {
-        ...typography.body
-    } as TextStyle,
-    helperText: {
-        ...typography.label,
-        color: '#8E8E8E',
-        marginTop: spacing.md
-    } as TextStyle,
+  scheduleBlock: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#00000010',
+    padding: spacing.md,
+    marginTop: spacing.md,
+  },
+  scheduleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#00000010',
+  },
+  scheduleLabel: {
+    ...typography.body,
+  } as TextStyle,
+  scheduleHint: {
+    ...typography.label,
+    color: '#8E8E8E',
+  } as TextStyle,
+  inlinePickers: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  pill: {
+    flex: 1,
+    backgroundColor: '#F6F6F6',
+    paddingVertical: spacing.md,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#00000010',
+  },
+  pillText: {
+    ...typography.body,
+  } as TextStyle,
+  helperText: {
+    ...typography.label,
+    color: '#8E8E8E',
+    marginTop: spacing.md,
+  } as TextStyle,
 
-    // Modal styles
-    modalBackdrop: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.35)',
-        justifyContent: 'flex-end'
-    },
-    modalSheet: {
-        backgroundColor: '#FFFFFF',
-        padding: spacing.lg,
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16
-    },
-    modalTitle: {
-        ...typography.body,
-        marginBottom: spacing.sm
-    } as TextStyle,
-    modalDone: {
-        alignSelf: 'flex-end',
-        marginTop: spacing.md
-    },
-    modalDoneText: {
-        ...typography.label,
-        color: color.primary,
-        fontWeight: 600
-    } as TextStyle
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#FFFFFF',
+    padding: spacing.lg,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  modalTitle: {
+    ...typography.body,
+    marginBottom: spacing.sm,
+  } as TextStyle,
+  modalDone: {
+    alignSelf: 'flex-end',
+    marginTop: spacing.md,
+  },
+  modalDoneText: {
+    ...typography.label,
+    color: color.primary,
+    fontWeight: 600,
+  } as TextStyle,
 });

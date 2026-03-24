@@ -1,11 +1,10 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     ScrollView,
     TextStyle,
-    Alert,
 } from 'react-native';
 import spacing from '../constants/spacing';
 import color from '../constants/color';
@@ -16,6 +15,9 @@ import ListRow from '../components/ListRow';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
 import { messagesApi } from '../services/messages';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+
 
 type LogItem = {
     id: string;
@@ -33,28 +35,51 @@ export default function Logs() {
     const [filter, setFilter] = useState<Filter>('All');
     const [items, setItems] = useState<LogItem[]>([]);
 
-    useEffect(() => {
-        (async () => {
-        try {
-            const res = await messagesApi.list(); // expected: { items: LogItem[] }
-            setItems(res.items || []);
-        } catch (e: any) {
-            Alert.alert('Error', e.message);
-        }
-        })();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            let active = true;
+
+            const load = async () => {
+            try {
+                const res = await messagesApi.list();
+                if (active) setItems(res.items);
+            } catch (e) {
+                console.error('Load Logs Error:', e);
+            }
+            };
+
+            load();
+            const interval = setInterval(load, 5000);
+
+            return () => {
+            active = false;
+            clearInterval(interval);
+            };
+        }, []),
+    );
 
     const visibleItems = useMemo(() => {
         const needle = q.trim().toLowerCase();
+
         return items
-        .filter((m) =>
-            filter === 'All'
-            ? true
-            : m.status.toLowerCase() === filter.toLowerCase(),
-        )
-        .filter((m) => (needle ? m.title.toLowerCase().includes(needle) : true));
+            .filter((m) => {
+            if (filter === 'All') return true;
+            if (filter === 'Delivered') return m.status === 'sent';
+            if (filter === 'Failed') return m.status === 'failed';
+            if (filter === 'Scheduled') return !!m.scheduledAt && m.status === 'queued';
+            return true;
+            })
+            .filter((m) =>
+            needle ? m.title.toLowerCase().includes(needle) : true,
+            );
     }, [items, q, filter]);
 
+    const getStatusColor = (item: LogItem) => {
+        if (item.status === 'sent') return '#2E7D32';
+        if (item.status === 'failed') return '#C62828';
+        if (item.scheduledAt) return '#EF6C00';
+        return '#8E8E8E';
+    };
     return (
         <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.content}>
@@ -78,10 +103,22 @@ export default function Logs() {
             <View style={{ marginTop: spacing.md }}>
             {visibleItems.map((m) => (
                 <ListRow
-                key={m.id}
-                title={m.title}
-                meta={`${m.status} · ${new Date(m.createdAt).toLocaleString()}`}
-                onPress={() => navigation.navigate('LogDetail', { id: m.id })}
+                    key={m.id}
+                    title={m.title}
+                    meta={`${
+                        m.status === 'sent'
+                            ? 'Delivered'
+                            : m.status === 'failed'
+                            ? 'Failed'
+                            : m.status === 'queued' && m.scheduledAt
+                                ? 'Scheduled'
+                                : m.status
+                        } · ${
+                        m.scheduledAt && m.status === 'queued'
+                            ? new Date(m.scheduledAt).toLocaleString()
+                            : new Date(m.createdAt).toLocaleString()
+                        }`}
+                    onPress={() => navigation.navigate('LogDetail', { id: m.id })}
                 />
             ))}
             </View>

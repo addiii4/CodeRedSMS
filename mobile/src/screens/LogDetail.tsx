@@ -27,14 +27,24 @@ export default function LogDetail() {
     } | null>(null);
 
     useEffect(() => {
-        (async () => {
+        let active = true;
+
+        const load = async () => {
             try {
-                const res = await messagesApi.get(id);
-                setData(res);
+            const res = await messagesApi.detail(id);
+            if (active) setData(res);
             } catch (e: any) {
-                Alert.alert('Error', e.message);
+            console.error('Log detail load error:', e);
             }
-        })();
+        };
+
+        load();
+        const interval = setInterval(load, 5000);
+
+        return () => {
+            active = false;
+            clearInterval(interval);
+        };
     }, [id]);
 
         return (
@@ -53,6 +63,14 @@ export default function LogDetail() {
                             <Text style={styles.meta}>Message</Text>
                             <Text style={styles.body}>{data.body}</Text>
                         </View>
+                        {data.scheduledAt ? (
+                        <View style={styles.card}>
+                            <Text style={styles.meta}>Scheduled For</Text>
+                            <Text style={styles.body}>
+                            {new Date(data.scheduledAt).toLocaleString()}
+                            </Text>
+                        </View>
+                        ) : null}
                         <View style={styles.rowCard}>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.meta}>Status</Text>

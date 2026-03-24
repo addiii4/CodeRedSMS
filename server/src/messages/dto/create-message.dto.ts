@@ -1,8 +1,28 @@
+import { IsArray, IsISO8601, IsOptional, IsString, ArrayNotEmpty } from 'class-validator';
+
 export class CreateMessageDto {
-    title!: string;
-    body!: string;
-    groupIds?: string[];
-    contactIds?: string[];
-    adHocNumbers?: string[];       // optional E.164 numbers
-    scheduledAt?: string | null;   // ISO string or null
+  @IsString()
+  title!: string;
+
+  @IsString()
+  body!: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  groupIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  contactIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  adHocNumbers?: string[];
+
+  @IsOptional()
+  @IsISO8601()
+  scheduledAt?: string | null;
 }

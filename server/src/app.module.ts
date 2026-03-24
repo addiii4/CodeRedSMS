@@ -9,6 +9,7 @@ import { ContactsModule } from './contacts/contacts.module';
 import { GroupsModule } from './groups/groups.module';
 import { TemplatesModule } from './templates/templates.module';
 import { MessagesModule } from './messages/messages.module';
+import { SmsGlobalModule } from './smsglobal/smsglobal.module';
 
 @Module({
     imports: [
@@ -21,7 +22,8 @@ import { MessagesModule } from './messages/messages.module';
         ContactsModule,
         GroupsModule,
         TemplatesModule,
-        MessagesModule
+        MessagesModule,
+        SmsGlobalModule
     ]
 })
 export class AppModule {}

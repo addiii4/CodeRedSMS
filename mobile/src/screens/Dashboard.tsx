@@ -19,9 +19,45 @@ import QuickActionButton from '../components/QuickActionButton';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { messagesApi } from '../services/messages';
 
 export default function Dashboard() {
     const navigation = useAppNavigation();
+
+    type DashboardLogItem = {
+        id: string;
+        title: string;
+        status: string;
+        createdAt: string;
+        scheduledAt: string | null;
+    };
+
+    const [recentLogs, setRecentLogs] = useState<DashboardLogItem[]>([]);
+
+    useFocusEffect(
+        useCallback(() => {
+            let active = true;
+
+            const load = async () => {
+            try {
+                const res = await messagesApi.list();
+                if (active) {
+                setRecentLogs(res.items.slice(0, 3));
+                }
+            } catch (e) {
+                console.error('Dashboard logs load error:', e);
+            }
+            };
+
+            load();
+
+            return () => {
+            active = false;
+            };
+        }, []),
+    );
 
     return (
         <View style={styles.container}>
@@ -35,8 +71,16 @@ export default function Dashboard() {
                 </SafeAreaView>
 
                 <SecTitle text="Recent Activity" />
-                <ActivityCard text="5 SMS sent | Today at 09:24" />
-                <ActivityCard text="12 SMS sent | Yesterday at 15:01" />
+                {recentLogs.length === 0 ? (
+                <ActivityCard text="No recent activity yet" />
+                    ) : (
+                    recentLogs.map((item) => (
+                        <ActivityCard
+                        key={item.id}
+                        text={`${item.title} | ${item.status} | ${new Date(item.createdAt).toLocaleString()}`}
+                        />
+                    ))
+                )}
                 <PrimaryButton label="View All Logs" onPress={() => navigation.navigate('Logs' as never)} />
 
                 <SecTitle text="Quick Actions" />
