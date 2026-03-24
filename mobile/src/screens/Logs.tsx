@@ -66,7 +66,7 @@ export default function Logs() {
             if (filter === 'All') return true;
             if (filter === 'Delivered') return m.status === 'sent';
             if (filter === 'Failed') return m.status === 'failed';
-            if (filter === 'Scheduled') return !!m.scheduledAt;
+            if (filter === 'Scheduled') return !!m.scheduledAt && m.status === 'queued';
             return true;
             })
             .filter((m) =>
@@ -105,7 +105,19 @@ export default function Logs() {
                 <ListRow
                     key={m.id}
                     title={m.title}
-                    meta={`${m.status === 'sent' ? 'Delivered' : m.scheduledAt ? 'Scheduled' : m.status} · ${new Date(m.createdAt).toLocaleString()}`}
+                    meta={`${
+                        m.status === 'sent'
+                            ? 'Delivered'
+                            : m.status === 'failed'
+                            ? 'Failed'
+                            : m.status === 'queued' && m.scheduledAt
+                                ? 'Scheduled'
+                                : m.status
+                        } · ${
+                        m.scheduledAt && m.status === 'queued'
+                            ? new Date(m.scheduledAt).toLocaleString()
+                            : new Date(m.createdAt).toLocaleString()
+                        }`}
                     onPress={() => navigation.navigate('LogDetail', { id: m.id })}
                 />
             ))}

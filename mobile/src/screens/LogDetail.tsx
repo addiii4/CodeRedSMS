@@ -63,6 +63,14 @@ export default function LogDetail() {
                             <Text style={styles.meta}>Message</Text>
                             <Text style={styles.body}>{data.body}</Text>
                         </View>
+                        {data.scheduledAt ? (
+                        <View style={styles.card}>
+                            <Text style={styles.meta}>Scheduled For</Text>
+                            <Text style={styles.body}>
+                            {new Date(data.scheduledAt).toLocaleString()}
+                            </Text>
+                        </View>
+                        ) : null}
                         <View style={styles.rowCard}>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.meta}>Status</Text>
