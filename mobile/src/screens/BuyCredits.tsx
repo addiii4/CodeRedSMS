@@ -1,13 +1,15 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, TextStyle } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TextStyle, Linking } from 'react-native';
 import spacing from '../constants/spacing';
 import color from '../constants/color';
 import typography from '../constants/typography';
 import PricingCard from '../components/PricingCard';
-import PaymentMethodCard from '../components/PaymentMethodCard';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
+import { api } from '../lib/api';
+import React, { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { paymentsApi } from '../services/payments';
 
 type PlanKey = 'starter' | 'team' | 'enterprise' | 'custom';
 
@@ -35,12 +37,32 @@ export default function BuyCredits() {
         return { credits: plan.credits, price: plan.price };
     }, [selected, customCredits]);
 
+    const [currentCredits, setCurrentCredits] = useState(0);
+
+    useFocusEffect(
+        useCallback(() => {
+            paymentsApi
+            .balance()
+            .then((res: { credits: React.SetStateAction<number>; }) => setCurrentCredits(res.credits))
+            .catch((e: any) => console.error('Load credits failed', e));
+        }, []),
+    );
+
     const estimatedMessages = Math.floor(credits); // 1 credit ~= 1 SMS (160 chars)
+    const handleBuy = async (amount: number, credits: number) => {
+        try {
+            const res = await paymentsApi.checkout({ amount, credits });
+            await Linking.openURL(res.url);
+        } catch (e) {
+            console.error('Checkout error', e);
+        }
+    };
 
     return (
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.content}>
                 <Text style={styles.header}>Buy Credits</Text>
+                <Text style={styles.balanceText}>Current balance: {currentCredits} credits</Text>
 
                 {/* Plans */}
                 <View style={styles.grid}>
@@ -100,11 +122,6 @@ export default function BuyCredits() {
                     </View>
                 </View>
 
-                {/* Payment (Stripe-style) */}
-                <View style={{ marginTop: spacing.md }}>
-                    <PaymentMethodCard brand="visa" last4="4242" onChange={() => { /* later: open payment sheet */ }} />
-                </View>
-
                 {/* Spacer to avoid overlap with CTA */}
                 <View style={{ height: spacing.margin }} />
             </ScrollView>
@@ -112,8 +129,8 @@ export default function BuyCredits() {
             <BottomCTA
                 label={selected === 'custom' ? 'Checkout · Custom' : 'Checkout'}
                 onPress={() => {
-                    // later: integrate Stripe payment sheet
-                    // e.g., presentPaymentSheet()
+                    if (!price) return;
+                    handleBuy(price, credits);
                 }}
             />
 
@@ -132,6 +149,11 @@ const styles = StyleSheet.create({
     header: { ...typography.title, marginBottom: spacing.md } as TextStyle,
 
     grid: { flexDirection: 'row', gap: spacing.md },
+    balanceText: {
+        ...typography.label,
+        color: '#8E8E8E',
+        marginBottom: spacing.md,
+    } as TextStyle,
 
     customCard: {
         flex: 1,
