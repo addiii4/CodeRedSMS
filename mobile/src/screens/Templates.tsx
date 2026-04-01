@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextStyle, Alert } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextStyle } from 'react-native';
 import spacing from '../constants/spacing';
 import color from '../constants/color';
 import typography from '../constants/typography';
@@ -9,78 +9,84 @@ import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
 import { templatesApi, Template } from '../services/templates';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function Templates() {
-    const navigation = useAppNavigation();
-    const [data, setData] = useState<Template[]>([]);
-    const load = async () => setData(await templatesApi.list());
-    const [q, setQ] = useState('');
+  const navigation = useAppNavigation();
+  const [data, setData] = useState<Template[]>([]);
+  const [q, setQ] = useState('');
 
-    useEffect(() => {
-        load().catch((e) => Alert.alert('Error', e.message));
-    }, []);
-    return (
-        <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
-                <Text style={styles.header}>Templates</Text>
-                <SearchBar value={q} onChangeText={setQ} placeholder="Search templates…" />
+  const load = async () => {
+    const res = await templatesApi.list();
+    setData(res);
+  };
 
-                <View style={{ marginTop: spacing.md }}>
-                    {data.filter(t =>
-                            t.title.toLowerCase().includes(q.toLowerCase()) ||
-                            t.body.toLowerCase().includes(q.toLowerCase())
-                        ).map(t => (
-                            <ListRow
-                                key={t.id}
-                                title={t.title}
-                                meta={`${t.body.length} chars`}
-                                onPress={() => navigation.navigate('TemplatePreview', { title: t.title, body: t.body })}
-                            />
-                        ))
-                    }
-                    {/*
-                    <ListRow
-                        title="Fire Alarm – Evacuate Now"
-                        meta="132 chars"
-                        onPress={() => navigation.navigate('TemplatePreview', {
-                            title: 'Fire Alarm – Evacuate Now',
-                            body: 'Fire Alarm – Evacuate Now. Please proceed to the nearest exit and assemble at the designated area.'
-                        })}
-                    />
-                    <ListRow
-                        title="Maintenance Notice Tonight"
-                        meta="104 chars"
-                        onPress={() => navigation.navigate('TemplatePreview', {
-                            title: 'Maintenance Notice Tonight',
-                            body: 'Scheduled maintenance tonight from 9pm to 11pm. Expect brief outages.'
-                        })}
-                    />
-                    <ListRow
-                        title="Evacuation Drill Reminder"
-                        meta="92 chars"
-                        onPress={() => navigation.navigate('TemplatePreview', {
-                            title: 'Evacuation Drill Reminder',
-                            body: 'Reminder: Evacuation drill at 10:30am. Please follow wardens’ instructions.'
-                        })}
-                    />*/}
-                </View>
+  useFocusEffect(
+    useCallback(() => {
+      load().catch((e) => console.error('Load templates failed', e));
+    }, []),
+  );
 
-                <View style={{ height: spacing.margin }} />
-            </ScrollView>
+  return (
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.header}>Templates</Text>
+        <SearchBar
+          value={q}
+          onChangeText={setQ}
+          placeholder="Search templates…"
+        />
 
-            <BottomCTA label="Create Template" onPress={() => navigation.navigate('TemplateEdit')} />
-
-            <NavBar
-                onHome={() => navigation.navigate('Dashboard')}
-                onCompose={() => navigation.navigate('Compose')}
-                onMenu={() => navigation.navigate('Settings')}
-            />
+        <View style={{ marginTop: spacing.md }}>
+          {data
+            .filter(
+              (t) =>
+                t.title.toLowerCase().includes(q.toLowerCase()) ||
+                t.body.toLowerCase().includes(q.toLowerCase()),
+            )
+            .map((t) => (
+              <ListRow
+                key={t.id}
+                title={t.title}
+                meta={`${t.body.length} chars`}
+                onPress={() =>
+                  navigation.navigate('TemplatePreview', {
+                    title: t.title,
+                    body: t.body,
+                    templateId: t.id,
+                    mode: 'edit',
+                  })
+                }
+              />
+            ))}
         </View>
-    );
-}
 
+        <View style={{ height: spacing.margin }} />
+      </ScrollView>
+
+      <BottomCTA
+        label="Create Template"
+        onPress={() => navigation.navigate('TemplateEdit')}
+      />
+
+      <NavBar
+        onHome={() => navigation.navigate('Dashboard')}
+        onCompose={() => navigation.navigate('Compose')}
+        onMenu={() => navigation.navigate('Settings')}
+      />
+    </View>
+  );
+}
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: color.background, justifyContent: 'space-between' },
-    content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
-    header: { ...typography.title, marginTop: spacing.margin, marginBottom: spacing.md } as TextStyle
+  container: {
+    flex: 1,
+    backgroundColor: color.background,
+    justifyContent: 'space-between',
+  },
+  content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
+  header: {
+    ...typography.title,
+    marginTop: spacing.margin,
+    marginBottom: spacing.md,
+  } as TextStyle,
 });
