@@ -22,6 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { messagesApi } from '../services/messages';
+import { paymentsApi } from '../services/payments';
 
 export default function Dashboard() {
     const navigation = useAppNavigation();
@@ -35,6 +36,17 @@ export default function Dashboard() {
     };
 
     const [recentLogs, setRecentLogs] = useState<DashboardLogItem[]>([]);
+
+    const [credits, setCredits] = useState(0);
+
+    useFocusEffect(
+        useCallback(() => {
+            paymentsApi
+            .balance()
+            .then((res: { credits: React.SetStateAction<number>; }) => setCredits(res.credits))
+            .catch((e: any) => console.error('Load dashboard credits failed', e));
+        }, []),
+    );
 
     useFocusEffect(
         useCallback(() => {
@@ -66,7 +78,7 @@ export default function Dashboard() {
                 <SafeAreaView edges={['top']} style={{ paddingTop: Spacing.md }}>
                     <View style={styles.header}>
                         <Text style={styles.title as any}>Dashboard</Text>
-                        <CreditsBadge credits={550} onPress={() => navigation.navigate('BuyCredits')} />
+                        <CreditsBadge credits={credits} onPress={() => navigation.navigate('BuyCredits')} />
                     </View>
                 </SafeAreaView>
 
