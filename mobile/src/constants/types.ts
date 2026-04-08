@@ -19,10 +19,14 @@ export type RootStackParamList = {
         contactIds: string[];
         adHocNumbers?: string[];
     };
+    TemplatePreview: { 
+    title: string; 
+    body: string; 
+    templateId?: string;
+    mode?: 'use' | 'edit';
+    };
     Logs: undefined;
     LogDetail: { id: string };
-    // Template preview
-    TemplatePreview: { title: string; body: string };
     // Other
     Templates: undefined;
     TemplateEdit: undefined;

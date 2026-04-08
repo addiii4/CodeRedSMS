@@ -9,17 +9,47 @@ import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../constants/types';
+import { templatesApi } from '../services/templates';
 
 type TemplatePreviewRoute = RouteProp<RootStackParamList, 'TemplatePreview'>;
 
 export default function TemplatePreview() {
     const navigation = useAppNavigation();
     const route = useRoute<TemplatePreviewRoute>();
-    const { title: t = '', body: b = '' } = route.params ?? {};
+    const {
+        title: initialTitle,
+        body: initialBody,
+        templateId,
+        mode = 'use',
+    } = route.params;
 
-    const [title, setTitle] = useState(t);
-    const [body, setBody] = useState(b);
+    const [title, setTitle] = useState(initialTitle);
+    const [body, setBody] = useState(initialBody);
+    const [saving, setSaving] = useState(false);
     const count = body.length;
+
+    const handlePrimary = async () => {
+      if (mode === 'use') {
+        navigation.navigate('Compose', {
+          presetTitle: title,
+          presetBody: body,
+        });
+        return;
+      }
+
+      // EDIT MODE
+      if (!templateId) return;
+
+      try {
+        setSaving(true);
+        await templatesApi.update(templateId, { title, body });
+        navigation.goBack();
+      } catch (e) {
+        console.error('Update failed', e);
+      } finally {
+        setSaving(false);
+      }
+    };
 
     return (
         <View style={styles.container}>
@@ -29,8 +59,26 @@ export default function TemplatePreview() {
                     <Pressable onPress={() => navigation.goBack()} style={styles.back}>
                         <Ionicons name="chevron-back" size={24} color={color.text} />
                     </Pressable>
+
                     <Text style={styles.header}>Template</Text>
-                    <View style={{ width: 24 }} />
+
+                    {mode === 'edit' && templateId ? (
+                        <Pressable
+                        onPress={async () => {
+                            try {
+                            await templatesApi.remove(templateId);
+                            navigation.goBack();
+                            } catch (e) {
+                            console.error('Delete failed', e);
+                            }
+                        }}
+                        style={{ padding: 4 }}
+                        >
+                        <Ionicons name="trash" size={20} color="red" />
+                        </Pressable>
+                    ) : (
+                        <View style={{ width: 24 }} />
+                    )}
                 </View>
 
                 {/* Form */}
@@ -61,8 +109,14 @@ export default function TemplatePreview() {
             </ScrollView>
 
             <BottomCTA
-                label="Use This"
-                onPress={() => navigation.navigate('Compose', { presetTitle: title, presetBody: body })}
+                label={
+                    mode === 'use'
+                    ? 'Use Template'
+                    : saving
+                        ? 'Saving...'
+                        : 'Save Changes'
+                }
+                onPress={handlePrimary}
             />
 
             <NavBar

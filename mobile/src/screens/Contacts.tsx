@@ -122,11 +122,6 @@ export default function Contacts() {
                     }
                   />
                 ))}
-              {/* 
-                        <ListRow title="Alice Chen" meta="+61 400 123 456" onPress={() => {}} />
-                        <ListRow title="Ben Singh" meta="+61 400 987 654" onPress={() => {}} />
-                        <ListRow title="Chris Walker" meta="+61 400 222 333" onPress={() => {}} />
-                        */}
             </View>
           )}
 

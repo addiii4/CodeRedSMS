@@ -50,104 +50,102 @@ export default function SelectGroups() {
     return (
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.content}>
-                {/* Header with Back */}
-                <View style={styles.topRow}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-                        <Ionicons name="chevron-back" size={24} color={color.text} />
-                    </TouchableOpacity>
-                    <Text style={styles.header}>Choose Recipients</Text>
-                    <View style={{ width: 24 }} />
-                </View>
+            <View style={styles.topRow}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
+                <Ionicons name="chevron-back" size={24} color={color.text} />
+                </TouchableOpacity>
+                <Text style={styles.header}>Choose Recipients</Text>
+                <View style={{ width: 24 }} />
+            </View>
 
-                <SearchBar value={q} onChangeText={setQ} placeholder="Search groups…" />
+            <SearchBar value={q} onChangeText={setQ} placeholder="Search groups…" />
 
-                <View style={{ marginTop: spacing.md }}>
-                    {groups
-                        .filter(g => g.name.toLowerCase().includes(q.toLowerCase()))
-                        .map(g => {
-                            const checked = !!selected[g.id];
-                            return (
-                                <Pressable
-                                    key={g.id}
-                                    onPress={() => toggle(g.id)}
-                                    style={{
-                                        paddingVertical: spacing.md,
-                                        borderBottomWidth: 1,
-                                        borderBottomColor: '#00000012',
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between'
-                                    }}
-                                >
-                                    <View>
-                                        <Text style={{ ...typography.body } as TextStyle}>{g.name}</Text>
-                                        <Text style={{ ...typography.caption, color: '#8E8E8E' } as TextStyle}>
-                                            {(g.members || []).length} members
-                                        </Text>
-                                    </View>
+            <View style={{ marginTop: spacing.md }}>
+                {groups
+                .filter(g => g.name.toLowerCase().includes(q.toLowerCase()))
+                .map(g => {
+                    const checked = !!selected[g.id];
+                    return (
+                    <Pressable
+                        key={g.id}
+                        onPress={() => toggle(g.id)}
+                        style={{
+                        paddingVertical: spacing.md,
+                        borderBottomWidth: 1,
+                        borderBottomColor: '#00000012',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                        }}
+                    >
+                        <View>
+                        <Text style={{ ...typography.body } as TextStyle}>{g.name}</Text>
+                        <Text style={{ ...typography.caption, color: '#8E8E8E' } as TextStyle}>
+                            {(g.members || []).length} members
+                        </Text>
+                        </View>
 
-                                    {/* simple checkbox dot */}
-                                    <View style={{
-                                        width: 22, height: 22, borderRadius: 11,
-                                        borderWidth: 2, borderColor: checked ? color.primary : '#CFCFCF',
-                                        alignItems: 'center', justifyContent: 'center'
-                                    }}>
-                                        {checked ? (
-                                            <View style={{
-                                                width: 12, height: 12, borderRadius: 6, backgroundColor: color.primary
-                                            }} />
-                                        ) : null}
-                                    </View>
-                                </Pressable>
-                            );
-                        })
-                    }
-                
-                {/*    {Object.entries(checked).map(([label, isChecked]) => (
-                        <CheckboxRow
-                            key={label}
-                            label={label}
-                            count={label.includes('Tenants') ? 120 : label.includes('Maintenance') ? 32 : 8}
-                            checked={isChecked}
-                            onToggle={() => toggle(label)}
-                        />
-                    ))} */}
-                </View>
-                {//<Text style={styles.helper}>Selected groups: {selectedCount}</Text>}
-                }
-                <BottomCTA
-                    label="Next · Schedule"
-                    onPress={() => {
-                        const ids = Object.keys(selected).filter(id => selected[id]);
+                        <View
+                        style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: 11,
+                            borderWidth: 2,
+                            borderColor: checked ? color.primary : '#CFCFCF',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                        >
+                        {checked ? (
+                            <View
+                            style={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: 6,
+                                backgroundColor: color.primary
+                            }}
+                            />
+                        ) : null}
+                        </View>
+                    </Pressable>
+                    );
+                })}
+            </View>
 
-                        if (ids.length === 0) {
-                        return; // block silently
-                        }
-
-                        navigation.navigate('ScheduleReview', {
-                        title: draftTitle,
-                        body: draftBody,
-                        groupIds: ids, // ✅ FIXED
-                        contactIds: [],
-                        adHocNumbers: [],
-                        });
-                    }}
-                />
+            <View style={{ height: spacing.margin }} />
             </ScrollView>
+
+            <BottomCTA
+            label="Next · Schedule"
+            onPress={() => {
+                const ids = Object.keys(selected).filter(id => selected[id]);
+                if (ids.length === 0) return;
+
+                navigation.navigate('ScheduleReview', {
+                title: draftTitle,
+                body: draftBody,
+                groupIds: ids,
+                contactIds: [],
+                adHocNumbers: [],
+                });
+            }}
+            />
+
             <NavBar
-                onHome={() => navigation.navigate('Dashboard' as never)}
-                onCompose={() => navigation.navigate('Compose' as never)}
-                onMenu={() => navigation.navigate('Settings' as never)}
-                disableCompose 
+            onHome={() => navigation.navigate('Dashboard' as never)}
+            onCompose={() => navigation.navigate('Compose' as never)}
+            onMenu={() => navigation.navigate('Settings' as never)}
+            disableCompose
             />
         </View>
-    );
+        );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: color.background
+        backgroundColor: color.background,
+        justifyContent: 'space-between'
     },
     content: {
         paddingHorizontal: spacing.lg,

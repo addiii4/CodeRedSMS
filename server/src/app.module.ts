@@ -10,6 +10,7 @@ import { GroupsModule } from './groups/groups.module';
 import { TemplatesModule } from './templates/templates.module';
 import { MessagesModule } from './messages/messages.module';
 import { SmsGlobalModule } from './smsglobal/smsglobal.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
     imports: [
@@ -23,7 +24,8 @@ import { SmsGlobalModule } from './smsglobal/smsglobal.module';
         GroupsModule,
         TemplatesModule,
         MessagesModule,
-        SmsGlobalModule
+        SmsGlobalModule,
+        PaymentsModule
     ]
 })
 export class AppModule {}
