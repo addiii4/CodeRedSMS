@@ -57,7 +57,6 @@ export default function Settings() {
                 {/* Billing */}
                 <View style={styles.section}>
                     <Text style={styles.sectionLabel}>Billing</Text>
-                    <ListRow title="Payment Methods" onPress={() => navigation.navigate('PaymentMethods')} />
                     <ListRow title="Purchase History" onPress={() => navigation.navigate('PurchaseHistory')} />
                 </View>
 

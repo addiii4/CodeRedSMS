@@ -23,7 +23,6 @@ import ChangePassword from '../screens/ChangePassword';
 import ContactImport from '../screens/ContactImport';
 import ContactUs from '../screens/ContactUs';
 import HelpCenter from '../screens/HelpCenter';
-import PaymentMethods from '../screens/PaymentMethods';
 import Profile from '../screens/Profile';
 import PurchaseHistory from '../screens/PurchaseHistory';
 import LogDetail from '../screens/LogDetail';
@@ -70,7 +69,6 @@ export default function AppNavigator() {
             <Stack.Screen name="PersonEdit" component={PersonEdit} />
             <Stack.Screen name="Profile" component={Profile} />
             <Stack.Screen name="ChangePassword" component={ChangePassword} />
-            <Stack.Screen name="PaymentMethods" component={PaymentMethods} />
             <Stack.Screen name="PurchaseHistory" component={PurchaseHistory} />
             <Stack.Screen name="HelpCenter" component={HelpCenter} />
             <Stack.Screen name="ContactUs" component={ContactUs} />
