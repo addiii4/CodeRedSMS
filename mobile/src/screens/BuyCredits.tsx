@@ -7,9 +7,10 @@ import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
 import { api } from '../lib/api';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { paymentsApi } from '../services/payments';
+import { AppState } from 'react-native';
 
 type PlanKey = 'starter' | 'team' | 'enterprise' | 'custom';
 
@@ -48,10 +49,34 @@ export default function BuyCredits() {
         }, []),
     );
 
+    const [checkingReturn, setCheckingReturn] = useState(false);
+
+    useEffect(() => {
+        const sub = AppState.addEventListener('change', async (state) => {
+            if (state === 'active' && checkingReturn) {
+            try {
+                const res = await paymentsApi.balance();
+
+                // if credits increased → assume payment success
+                if (res.credits > currentCredits) {
+                navigation.navigate('PurchaseHistory');
+                }
+            } catch (e) {
+                console.error('Return check failed', e);
+            } finally {
+                setCheckingReturn(false);
+            }
+            }
+        });
+
+        return () => sub.remove();
+    }, [checkingReturn, currentCredits]);
+
     const estimatedMessages = Math.floor(credits); // 1 credit ~= 1 SMS (160 chars)
     const handleBuy = async (amount: number, credits: number) => {
         try {
             const res = await paymentsApi.checkout({ amount, credits });
+            setCheckingReturn(true);
             await Linking.openURL(res.url);
         } catch (e) {
             console.error('Checkout error', e);

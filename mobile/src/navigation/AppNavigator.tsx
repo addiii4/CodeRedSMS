@@ -31,11 +31,21 @@ import ContactDetail from '../screens/ContactDetail';
 import { AuthProvider } from '../state/auth';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const linking = {
+  prefixes: ['coderedsms://'],
+  config: {
+    screens: {
+      PurchaseHistory: 'purchase-history',
+      BuyCredits: 'buy-credits',
+      Dashboard: 'dashboard',
+    },
+  },
+};
 
 export default function AppNavigator() {
     return (
       <AuthProvider>
-        <NavigationContainer>
+        <NavigationContainer linking={linking}>
           <Stack.Navigator
             initialRouteName="Splash"
             screenOptions={{ headerShown: false }}
