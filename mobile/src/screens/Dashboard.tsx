@@ -5,8 +5,10 @@ import { View, Text, ScrollView, StyleSheet, Pressable,
     KeyboardAvoidingView,
     Platform,
     Image,
-    TextStyle
+    TextStyle,
+    Alert
 } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import Colors from '../constants/color';
 import Spacing from '../constants/spacing';
 import Typography from '../constants/typography';
@@ -19,10 +21,13 @@ import QuickActionButton from '../components/QuickActionButton';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { messagesApi } from '../services/messages';
 import { paymentsApi } from '../services/payments';
+import { PREF_LOW_CREDIT_ALERTS } from './Settings';
+
+const LOW_CREDIT_THRESHOLD = 20;
 
 export default function Dashboard() {
     const navigation = useAppNavigation();
@@ -36,14 +41,28 @@ export default function Dashboard() {
     };
 
     const [recentLogs, setRecentLogs] = useState<DashboardLogItem[]>([]);
-
     const [credits, setCredits] = useState(0);
+    const alertedRef = useRef(false);
 
     useFocusEffect(
         useCallback(() => {
+            alertedRef.current = false; // allow alert again each time screen focuses
             paymentsApi
             .balance()
-            .then((res: { credits: React.SetStateAction<number>; }) => setCredits(res.credits))
+            .then(async (res: { credits: number }) => {
+                setCredits(res.credits);
+                if (!alertedRef.current && res.credits < LOW_CREDIT_THRESHOLD) {
+                    const pref = await SecureStore.getItemAsync(PREF_LOW_CREDIT_ALERTS);
+                    if (pref !== 'false') {
+                        alertedRef.current = true;
+                        Alert.alert(
+                            '⚠️ Low Credits',
+                            `You have ${res.credits} credit${res.credits === 1 ? '' : 's'} remaining. Buy more to keep sending messages.`,
+                            [{ text: 'Buy Credits', onPress: () => navigation.navigate('BuyCredits') }, { text: 'Dismiss' }]
+                        );
+                    }
+                }
+            })
             .catch((e: any) => console.error('Load dashboard credits failed', e));
         }, []),
     );

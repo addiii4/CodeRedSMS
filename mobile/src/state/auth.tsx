@@ -15,6 +15,7 @@ type AuthContextType = {
     org: Org | null;
     deviceId: string | null;
     register: (p: { buildingCode: string; email: string; password: string }) => Promise<void>;
+    login: (p: { buildingCode: string; email: string; password: string }) => Promise<void>;
     deviceLogin: (p: { buildingCode: string }) => Promise<void>;
     logout: () => Promise<void>;
 };
@@ -52,18 +53,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setOrg(p.org);
     };
 
-    const register = async ({ buildingCode, email, password }: { buildingCode: string; email: string; password: string; }) => {
+    const register = async ({ buildingCode, email, password }: { buildingCode: string; email: string; password: string }) => {
         if (!deviceId) throw new Error('Device not ready');
         const data = await api.post<AuthPayload>('/auth/register', {
-            buildingCode, email, password, deviceId, platform: Platform.OS
+            buildingCode, email, password, deviceId, platform: Platform.OS,
         });
         await saveSession(data);
     };
 
-    const deviceLogin = async ({ buildingCode }: { buildingCode: string; }) => {
+    // Email + password login — also registers this device so future quick-logins work
+    const login = async ({ buildingCode, email, password }: { buildingCode: string; email: string; password: string }) => {
+        if (!deviceId) throw new Error('Device not ready');
+        const data = await api.post<AuthPayload>('/auth/login', {
+            buildingCode, email, password, deviceId, platform: Platform.OS,
+        });
+        await saveSession(data);
+    };
+
+    // Quick login — uses device ID only; works after the device has been registered
+    const deviceLogin = async ({ buildingCode }: { buildingCode: string }) => {
         if (!deviceId) throw new Error('Device not ready');
         const data = await api.post<AuthPayload>('/auth/device-login', {
-            buildingCode, deviceId
+            buildingCode, deviceId,
         });
         await saveSession(data);
     };
@@ -75,7 +86,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await SecureStore.deleteItemAsync(TOKEN_KEY);
     };
 
-    const value = useMemo(() => ({ ready, user, org, deviceId, register, deviceLogin, logout }), [ready, user, org, deviceId]);
+    const value = useMemo(
+        () => ({ ready, user, org, deviceId, register, login, deviceLogin, logout }),
+        [ready, user, org, deviceId],
+    );
 
     return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }

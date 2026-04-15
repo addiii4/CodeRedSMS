@@ -27,6 +27,8 @@ import Profile from '../screens/Profile';
 import PurchaseHistory from '../screens/PurchaseHistory';
 import LogDetail from '../screens/LogDetail';
 import ContactDetail from '../screens/ContactDetail';
+import OrgSettings from '../screens/OrgSettings';
+import OrgMembers from '../screens/OrgMembers';
 import { AuthProvider } from '../state/auth';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -74,6 +76,8 @@ export default function AppNavigator() {
             <Stack.Screen name="ContactUs" component={ContactUs} />
             <Stack.Screen name="ContactImport" component={ContactImport} />
             <Stack.Screen name="LogDetail" component={LogDetail} />
+            <Stack.Screen name="OrgSettings" component={OrgSettings} />
+            <Stack.Screen name="OrgMembers" component={OrgMembers} />
           </Stack.Navigator>
         </NavigationContainer>
       </AuthProvider>

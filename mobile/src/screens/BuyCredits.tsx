@@ -5,6 +5,7 @@ import typography from '../constants/typography';
 import PricingCard from '../components/PricingCard';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
+import HeaderBack from '../components/HeaderBack';
 import useAppNavigation from '../hooks/useAppNavigation';
 import { api } from '../lib/api';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -86,7 +87,9 @@ export default function BuyCredits() {
     return (
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.content}>
-                <Text style={styles.header}>Buy Credits</Text>
+                <View style={{ marginHorizontal: -spacing.lg }}>
+                    <HeaderBack title="Buy Credits" />
+                </View>
                 <Text style={styles.balanceText}>Current balance: {currentCredits} credits</Text>
 
                 {/* Plans */}
@@ -170,8 +173,7 @@ export default function BuyCredits() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: color.background, justifyContent: 'space-between' },
-    content: { paddingHorizontal: spacing.lg, marginTop: spacing.margin, paddingBottom: spacing.md },
-    header: { ...typography.title, marginBottom: spacing.md } as TextStyle,
+    content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
 
     grid: { flexDirection: 'row', gap: spacing.md },
     balanceText: {
