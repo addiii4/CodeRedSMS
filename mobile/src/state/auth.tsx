@@ -14,7 +14,7 @@ type AuthContextType = {
     user: User | null;
     org: Org | null;
     deviceId: string | null;
-    register: (p: { buildingCode: string; email: string; password: string }) => Promise<void>;
+    register: (p: { buildingCode: string; email: string; password: string; displayName?: string }) => Promise<void>;
     login: (p: { buildingCode: string; email: string; password: string }) => Promise<void>;
     deviceLogin: (p: { buildingCode: string }) => Promise<void>;
     logout: () => Promise<void>;
@@ -22,8 +22,10 @@ type AuthContextType = {
 
 const AuthCtx = createContext<AuthContextType>(null as any);
 
-const DEVICE_ID_KEY = 'codered_device_id';
-const TOKEN_KEY = 'codered_access_token';
+const DEVICE_ID_KEY  = 'codered_device_id';
+const TOKEN_KEY      = 'codered_access_token';
+const USER_KEY       = 'codered_user';   // persisted so Splash can restore session
+const ORG_KEY        = 'codered_org';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [ready, setReady] = useState(false);
@@ -33,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         (async () => {
+            // Restore / generate device ID
             let d = await SecureStore.getItemAsync(DEVICE_ID_KEY);
             if (!d) {
                 d = uuid();
@@ -40,8 +43,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
             setDeviceId(d);
 
-            const token = await SecureStore.getItemAsync(TOKEN_KEY);
-            if (token) setAccessToken(token);
+            // Restore session if token + user were previously saved
+            const token     = await SecureStore.getItemAsync(TOKEN_KEY);
+            const userJson  = await SecureStore.getItemAsync(USER_KEY);
+            const orgJson   = await SecureStore.getItemAsync(ORG_KEY);
+
+            if (token && userJson && orgJson) {
+                setAccessToken(token);
+                try {
+                    setUser(JSON.parse(userJson));
+                    setOrg(JSON.parse(orgJson));
+                } catch {
+                    // Corrupt stored data — clear it so user can re-login cleanly
+                    await SecureStore.deleteItemAsync(TOKEN_KEY);
+                    await SecureStore.deleteItemAsync(USER_KEY);
+                    await SecureStore.deleteItemAsync(ORG_KEY);
+                }
+            }
+
             setReady(true);
         })();
     }, []);
@@ -49,14 +68,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const saveSession = async (p: AuthPayload) => {
         setAccessToken(p.accessToken);
         await SecureStore.setItemAsync(TOKEN_KEY, p.accessToken);
+        await SecureStore.setItemAsync(USER_KEY, JSON.stringify(p.user));
+        await SecureStore.setItemAsync(ORG_KEY, JSON.stringify(p.org));
         setUser(p.user);
         setOrg(p.org);
     };
 
-    const register = async ({ buildingCode, email, password }: { buildingCode: string; email: string; password: string }) => {
+    const register = async ({ buildingCode, email, password, displayName }: { buildingCode: string; email: string; password: string; displayName?: string }) => {
         if (!deviceId) throw new Error('Device not ready');
         const data = await api.post<AuthPayload>('/auth/register', {
-            buildingCode, email, password, deviceId, platform: Platform.OS,
+            buildingCode, email, password, deviceId, platform: Platform.OS, displayName,
         });
         await saveSession(data);
     };
@@ -84,6 +105,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setOrg(null);
         setAccessToken(null);
         await SecureStore.deleteItemAsync(TOKEN_KEY);
+        await SecureStore.deleteItemAsync(USER_KEY);
+        await SecureStore.deleteItemAsync(ORG_KEY);
     };
 
     const value = useMemo(

@@ -42,7 +42,7 @@ export default function SignupScreen() {
         try {
             setSubmitting(true);
             console.log('[Signup] starting', { email, buildingCode });
-            await register({ buildingCode, email, password });
+            await register({ buildingCode, email, password, displayName: fullName.trim() });
             console.log('[Signup] success, navigating');
             navigation.navigate('Dashboard');
         } catch (e: any) {
