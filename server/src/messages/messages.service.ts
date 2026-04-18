@@ -27,11 +27,15 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
+    // Built-in scheduler — polls every 15 s for due messages.
+    // No external cron required. Keep the server process alive with PM2 in production:
+    //   pm2 start dist/main.js --name codered-api
     this.poller = setInterval(() => {
       this.processDueMessages().catch((err) => {
         console.error('Scheduled message worker error:', err);
       });
-    }, 15000); // every 15 sec
+    }, 15_000);
+    console.log('⏱  Scheduled message worker started (15 s interval)');
   }
 
   onModuleDestroy() {
