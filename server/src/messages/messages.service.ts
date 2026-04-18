@@ -186,6 +186,13 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
 
     if (!message) throw new BadRequestException('Message not found');
 
+    // Fetch org senderId to use as the SMS origin (Sender ID)
+    const org = await this.prisma.organization.findUnique({
+      where: { id: message.orgId },
+      select: { senderId: true },
+    });
+    const origin = org?.senderId || undefined;
+
     await this.prisma.message.update({
       where: { id: messageId },
       data: { status: 'sending' },
@@ -193,7 +200,7 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
 
     for (const recipient of message.recipients) {
       try {
-        const res = await this.smsglobal.sendSms(recipient.phoneE164, message.body);
+        const res = await this.smsglobal.sendSms(recipient.phoneE164, message.body, origin);
 
         const providerMsgId =
           res?.messages?.[0]?.id?.toString?.() ||
