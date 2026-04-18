@@ -23,7 +23,7 @@ export class AuthService {
     });
   }
 
-  async register(buildingCode: string, email: string, password: string, deviceId: string, platform?: string) {
+  async register(buildingCode: string, email: string, password: string, deviceId: string, platform?: string, displayName?: string) {
     if (!buildingCode || !email || !password || !deviceId) {
       throw new BadRequestException('Missing required fields');
     }
@@ -39,7 +39,11 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await this.prisma.user.create({
-      data: { email, passwordHash, displayName: email.split('@')[0] },
+      data: {
+        email,
+        passwordHash,
+        displayName: displayName?.trim() || email.split('@')[0],
+      },
     });
 
     const memberCount = await this.prisma.membership.count({ where: { orgId: org.id } });

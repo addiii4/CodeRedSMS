@@ -21,7 +21,7 @@ export class AuthController {
 
     @Post('register')
     register(@Body() dto: RegisterDto) {
-        return this.authService.register(dto.buildingCode, dto.email, dto.password, dto.deviceId, dto.platform);
+        return this.authService.register(dto.buildingCode, dto.email, dto.password, dto.deviceId, dto.platform, dto.displayName);
     }
 
     @Post('login')
