@@ -179,31 +179,10 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
   private async sendMessageNow(messageId: string) {
     const message = await this.prisma.message.findUnique({
       where: { id: messageId },
-      include: {
-        recipients: true,
-      },
+      include: { recipients: true },
     });
 
     if (!message) throw new BadRequestException('Message not found');
-
-    // Fetch org senderId — only use it if it passes SMSGlobal's origin rules:
-    //   alphanumeric: 1–11 chars [A-Za-z0-9], or numeric: 1–16 digits.
-    // Passing an invalid or unregistered origin causes SMSGlobal to reject the send.
-    const org = await this.prisma.organization.findUnique({
-      where: { id: message.orgId },
-      select: { senderId: true },
-    });
-    const rawSenderId = (org?.senderId ?? '').trim();
-    const senderIdValid =
-      /^[A-Za-z0-9]{1,11}$/.test(rawSenderId) ||
-      /^[0-9]{1,16}$/.test(rawSenderId);
-    const origin: string | undefined = senderIdValid ? rawSenderId : undefined;
-
-    if (rawSenderId && !senderIdValid) {
-      console.warn(
-        `[SMS] Org ${message.orgId} senderId "${rawSenderId}" is not a valid SMSGlobal origin — sending without origin.`,
-      );
-    }
 
     await this.prisma.message.update({
       where: { id: messageId },
@@ -212,7 +191,7 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
 
     for (const recipient of message.recipients) {
       try {
-        const res = await this.smsglobal.sendSms(recipient.phoneE164, message.body, origin);
+        const res = await this.smsglobal.sendSms(recipient.phoneE164, message.body);
 
         const providerMsgId =
           res?.messages?.[0]?.id?.toString?.() ||
@@ -221,10 +200,7 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
 
         await this.prisma.messageRecipient.update({
           where: { id: recipient.id },
-          data: {
-            status: 'sent',
-            providerMsgId,
-          },
+          data: { status: 'sent', providerMsgId },
         });
       } catch (err: any) {
         console.error(
@@ -246,13 +222,38 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
       select: { status: true },
     });
 
-    const hasFailed = recips.some((r) => r.status === 'failed');
-    const finalStatus = hasFailed ? 'failed' : 'sent';
+    const failedCount = recips.filter((r) => r.status === 'failed').length;
+    const finalStatus = failedCount > 0 ? 'failed' : 'sent';
 
     await this.prisma.message.update({
       where: { id: messageId },
       data: { status: finalStatus },
     });
+
+    // Refund credits for any failed recipients — users must not be charged
+    // for messages that were never delivered.
+    if (failedCount > 0) {
+      const segs = countSegments(message.body);
+      const refundAmount = failedCount * segs;
+      await this.prisma.$transaction([
+        this.prisma.organization.update({
+          where: { id: message.orgId },
+          data: { credits: { increment: refundAmount } },
+        }),
+        this.prisma.creditsLedger.create({
+          data: {
+            orgId: message.orgId,
+            type: 'credit',
+            amount: refundAmount,
+            reason: `Refund: ${failedCount} failed recipient${failedCount === 1 ? '' : 's'} for '${message.title}'`,
+          },
+        }),
+      ]);
+      console.log(
+        `[SMS] Refunded ${refundAmount} credit${refundAmount === 1 ? '' : 's'} ` +
+        `for ${failedCount} failed send${failedCount === 1 ? '' : 's'} (message ${messageId})`,
+      );
+    }
   }
 
   private async processDueMessages() {
