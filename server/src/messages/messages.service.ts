@@ -186,12 +186,24 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
 
     if (!message) throw new BadRequestException('Message not found');
 
-    // Fetch org senderId to use as the SMS origin (Sender ID)
+    // Fetch org senderId — only use it if it passes SMSGlobal's origin rules:
+    //   alphanumeric: 1–11 chars [A-Za-z0-9], or numeric: 1–16 digits.
+    // Passing an invalid or unregistered origin causes SMSGlobal to reject the send.
     const org = await this.prisma.organization.findUnique({
       where: { id: message.orgId },
       select: { senderId: true },
     });
-    const origin = org?.senderId || undefined;
+    const rawSenderId = (org?.senderId ?? '').trim();
+    const senderIdValid =
+      /^[A-Za-z0-9]{1,11}$/.test(rawSenderId) ||
+      /^[0-9]{1,16}$/.test(rawSenderId);
+    const origin: string | undefined = senderIdValid ? rawSenderId : undefined;
+
+    if (rawSenderId && !senderIdValid) {
+      console.warn(
+        `[SMS] Org ${message.orgId} senderId "${rawSenderId}" is not a valid SMSGlobal origin — sending without origin.`,
+      );
+    }
 
     await this.prisma.message.update({
       where: { id: messageId },
@@ -214,12 +226,16 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
             providerMsgId,
           },
         });
-      } catch (err) {
+      } catch (err: any) {
+        console.error(
+          `[SMS] Failed to send to ${recipient.phoneE164} (message ${messageId}):`,
+          err?.message ?? err,
+        );
         await this.prisma.messageRecipient.update({
           where: { id: recipient.id },
           data: {
             status: 'failed',
-            errorCode: 'SEND_FAILED',
+            errorCode: String(err?.message ?? 'SEND_FAILED').slice(0, 64),
           },
         });
       }

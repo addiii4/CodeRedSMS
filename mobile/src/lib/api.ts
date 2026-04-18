@@ -28,6 +28,7 @@ function parseErrorMessage(body: string, status: number): string {
     const fallbacks: Record<number, string> = {
         400: 'Invalid request. Please check your input.',
         401: 'Session expired. Please log in again.',
+        402: 'Insufficient credits.',
         403: 'You don\'t have permission to do that.',
         404: 'Not found.',
         409: 'This already exists.',
