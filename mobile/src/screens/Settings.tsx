@@ -101,6 +101,7 @@ export default function Settings() {
                     <Text style={styles.sectionLabel}>Account</Text>
                     <ListRow title="Profile" onPress={() => navigation.navigate('Profile')} />
                     <ListRow title="Change Password" onPress={() => navigation.navigate('ChangePassword')} />
+                    <ListRow title="Forgot / Reset Password" onPress={() => navigation.navigate('ForgotPassword')} />
                 </View>
 
                 {/* Contacts */}

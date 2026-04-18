@@ -173,9 +173,18 @@ export default function LoginScreen() {
 
                             <TouchableOpacity
                                 style={styles.switchMode}
-                                onPress={() => setShowEmailMode(false)}
+                                onPress={() => navigation.navigate('ForgotPassword')}
                             >
                                 <Text style={styles.switchModeText}>
+                                    Forgot password?
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.switchMode}
+                                onPress={() => setShowEmailMode(false)}
+                            >
+                                <Text style={[styles.switchModeText, { color: Colors.greyStroke }]}>
                                     ← Back to building code login
                                 </Text>
                             </TouchableOpacity>

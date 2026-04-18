@@ -45,4 +45,5 @@ export type RootStackParamList = {
     ContactImport: undefined;
     OrgSettings: undefined;
     OrgMembers: undefined;
+    ForgotPassword: undefined;
 };

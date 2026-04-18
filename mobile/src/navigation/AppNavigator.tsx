@@ -29,6 +29,7 @@ import LogDetail from '../screens/LogDetail';
 import ContactDetail from '../screens/ContactDetail';
 import OrgSettings from '../screens/OrgSettings';
 import OrgMembers from '../screens/OrgMembers';
+import ForgotPassword from '../screens/ForgotPassword';
 import { AuthProvider } from '../state/auth';
 import { navigationRef } from '../lib/navigationRef';
 
@@ -79,6 +80,7 @@ export default function AppNavigator() {
             <Stack.Screen name="LogDetail" component={LogDetail} />
             <Stack.Screen name="OrgSettings" component={OrgSettings} />
             <Stack.Screen name="OrgMembers" component={OrgMembers} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
           </Stack.Navigator>
         </NavigationContainer>
       </AuthProvider>

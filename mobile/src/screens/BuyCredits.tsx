@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, ScrollView, TextStyle, Linking } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TextStyle, Linking, Alert } from 'react-native';
 import spacing from '../constants/spacing';
 import color from '../constants/color';
 import typography from '../constants/typography';
@@ -55,18 +55,24 @@ export default function BuyCredits() {
     useEffect(() => {
         const sub = AppState.addEventListener('change', async (state) => {
             if (state === 'active' && checkingReturn) {
-            try {
-                const res = await paymentsApi.balance();
-
-                // if credits increased → assume payment success
-                if (res.credits > currentCredits) {
-                navigation.navigate('PurchaseHistory');
+                try {
+                    const res = await paymentsApi.balance();
+                    if (res.credits > currentCredits) {
+                        // Credits increased — payment was completed
+                        navigation.navigate('PurchaseHistory');
+                    } else {
+                        // Back in app but credits unchanged — payment was cancelled or not completed
+                        Alert.alert(
+                            'Payment not completed',
+                            'Your payment was cancelled or not completed. No credits were added.',
+                            [{ text: 'OK' }],
+                        );
+                    }
+                } catch (e) {
+                    console.error('Return check failed', e);
+                } finally {
+                    setCheckingReturn(false);
                 }
-            } catch (e) {
-                console.error('Return check failed', e);
-            } finally {
-                setCheckingReturn(false);
-            }
             }
         });
 

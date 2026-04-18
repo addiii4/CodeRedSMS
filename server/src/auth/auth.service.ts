@@ -166,4 +166,28 @@ export class AuthService {
     if (!ok) throw new UnauthorizedException('Incorrect password');
     return { ok: true };
   }
+
+  /**
+   * Reset a user's password without a verification email.
+   * Requires building code + registered email — both must match an existing
+   * membership. The same generic error is returned for any mismatch to
+   * prevent account enumeration.
+   */
+  async forgotPassword(buildingCode: string, email: string, newPassword: string) {
+    const org = await this.prisma.organization.findUnique({ where: { code: buildingCode } });
+    if (!org) throw new BadRequestException('Invalid building code or email');
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) throw new BadRequestException('Invalid building code or email');
+
+    const membership = await this.prisma.membership.findUnique({
+      where: { userId_orgId: { userId: user.id, orgId: org.id } },
+    });
+    if (!membership) throw new BadRequestException('Invalid building code or email');
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+
+    return { ok: true };
+  }
 }

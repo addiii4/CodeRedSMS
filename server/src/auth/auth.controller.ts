@@ -6,6 +6,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { DeviceLoginDto } from './dto/device-login.dto';
 import { VerifyPasswordDto } from './dto/verify-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -38,5 +39,10 @@ export class AuthController {
     @Post('verify-password')
     verifyPassword(@CurrentUser() user: ReqUser, @Body() dto: VerifyPasswordDto) {
         return this.authService.verifyPassword(user.userId, dto.password);
+    }
+
+    @Post('forgot-password')
+    forgotPassword(@Body() dto: ForgotPasswordDto) {
+        return this.authService.forgotPassword(dto.buildingCode, dto.email, dto.newPassword);
     }
 }

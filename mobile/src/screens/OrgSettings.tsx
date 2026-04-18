@@ -13,14 +13,12 @@ export default function OrgSettings() {
     const navigation = useAppNavigation();
     const [name, setName] = useState('');
     const [code, setCode] = useState('');
-    const [senderId, setSenderId] = useState('');
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         orgsApi.getOrg().then(org => {
             setName(org.name);
             setCode(org.code);
-            setSenderId(org.senderId ?? '');
         }).catch(() => {});
     }, []);
 
@@ -31,7 +29,7 @@ export default function OrgSettings() {
         }
         setSaving(true);
         try {
-            await orgsApi.updateOrg({ name: name.trim(), senderId: senderId.trim() || undefined });
+            await orgsApi.updateOrg({ name: name.trim() });
             Alert.alert('Saved', 'Organisation settings updated.');
             navigation.goBack();
         } catch (err: any) {
@@ -64,16 +62,6 @@ export default function OrgSettings() {
                     value={code}
                     editable={false}
                     placeholderTextColor="#BDBDBD"
-                />
-                <Text style={[styles.label, { marginTop: spacing.md }]}>Sender ID</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="e.g. CodeRed (max 11 chars)"
-                    placeholderTextColor="#BDBDBD"
-                    value={senderId}
-                    onChangeText={setSenderId}
-                    maxLength={11}
-                    autoCapitalize="none"
                 />
                 <View style={{ height: spacing.margin }} />
             </ScrollView>
