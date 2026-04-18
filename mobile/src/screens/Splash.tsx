@@ -11,21 +11,24 @@ export default function Splash() {
     const { ready, user } = useAuth();
 
     useEffect(() => {
-        if (!ready) return; // wait for SecureStore token restore to finish
+        if (!ready) return; // wait for SecureStore restore to finish
 
-        // Short delay so the splash logo is visible
+        // Short delay so the splash logo is always visible
         const timer = setTimeout(() => {
             if (user) {
-                // Token was valid — skip login, go straight to the app
+                // Restored session — go straight to the app
                 navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
             } else {
-                // No session — show login
-                navigation.navigate('Login');
+                // No session (or session was wiped by 401 handler)
+                navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
             }
         }, 800);
 
         return () => clearTimeout(timer);
-    }, [ready, user]);
+    // Only react to `ready` — user is fully resolved by the time ready flips to true.
+    // Watching `user` here causes Splash to re-fire on logout, which is handled separately.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ready]);
 
     return (
         <View style={styles.container}>

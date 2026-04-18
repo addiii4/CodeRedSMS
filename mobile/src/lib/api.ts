@@ -5,21 +5,29 @@ export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 let accessToken: string | null = null;
 export function setAccessToken(token: string | null) { accessToken = token; }
 
+/**
+ * Registered by auth.tsx on mount.
+ * Called whenever any API response comes back with HTTP 401 (token expired / invalid).
+ * The handler should clear the session and navigate to Login.
+ */
+type AuthFailureHandler = () => void;
+let authFailureHandler: AuthFailureHandler | null = null;
+export function setAuthFailureHandler(fn: AuthFailureHandler | null) {
+    authFailureHandler = fn;
+}
+
 /** Extracts a human-readable message from NestJS error responses. */
 function parseErrorMessage(body: string, status: number): string {
     try {
         const json = JSON.parse(body);
-        // NestJS shape: { statusCode, message, error }
-        // message can be a string or an array of validation strings
         if (json.message) {
             return Array.isArray(json.message) ? json.message[0] : String(json.message);
         }
     } catch { /* not JSON — fall through */ }
 
-    // Friendly fallbacks by status code
     const fallbacks: Record<number, string> = {
         400: 'Invalid request. Please check your input.',
-        401: 'Incorrect credentials. Please try again.',
+        401: 'Session expired. Please log in again.',
         403: 'You don\'t have permission to do that.',
         404: 'Not found.',
         409: 'This already exists.',
@@ -42,6 +50,12 @@ async function request<T>(method: HttpMethod, path: string, body?: any): Promise
 
     if (!res.ok) {
         const text = await res.text().catch(() => '');
+
+        // 401 = token expired or invalid — trigger global session clear
+        if (res.status === 401) {
+            authFailureHandler?.();
+        }
+
         throw new Error(parseErrorMessage(text, res.status));
     }
 

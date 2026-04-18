@@ -30,6 +30,7 @@ import ContactDetail from '../screens/ContactDetail';
 import OrgSettings from '../screens/OrgSettings';
 import OrgMembers from '../screens/OrgMembers';
 import { AuthProvider } from '../state/auth';
+import { navigationRef } from '../lib/navigationRef';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const linking = {
@@ -46,7 +47,7 @@ const linking = {
 export default function AppNavigator() {
     return (
       <AuthProvider>
-        <NavigationContainer linking={linking}>
+        <NavigationContainer ref={navigationRef} linking={linking}>
           <Stack.Navigator
             initialRouteName="Splash"
             screenOptions={{ headerShown: false }}
