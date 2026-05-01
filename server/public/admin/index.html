@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Code Red SMS — Super Admin</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f7; color: #1c1c1e; }
+  header { background: #1c1c1e; color: #fff; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { font-size: 18px; font-weight: 600; }
+  header .me { font-size: 13px; opacity: 0.8; }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  .card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .stat { background: #fff; padding: 16px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .stat .label { font-size: 12px; text-transform: uppercase; color: #8e8e93; letter-spacing: 0.5px; }
+  .stat .value { font-size: 26px; font-weight: 700; margin-top: 4px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab { background: #fff; border: 1px solid #e5e5ea; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .tab.active { background: #1c1c1e; color: #fff; border-color: #1c1c1e; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px; text-align: left; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+  th { background: #fafafa; font-weight: 600; color: #555; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+  tr:hover td { background: #fafafa; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .badge.sent { background: #e8f5e8; color: #2e7d32; }
+  .badge.failed { background: #ffebee; color: #c62828; }
+  .badge.queued, .badge.scheduled { background: #fff8e1; color: #f57f17; }
+  .badge.sending { background: #e3f2fd; color: #1565c0; }
+  .badge.credit { background: #e8f5e8; color: #2e7d32; }
+  .badge.debit { background: #ffebee; color: #c62828; }
+  .login { max-width: 400px; margin: 80px auto; }
+  .login input, .form input { width: 100%; padding: 10px 12px; border: 1px solid #d1d1d6; border-radius: 8px; font-size: 14px; margin-bottom: 12px; }
+  .btn { background: #1c1c1e; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn:hover { opacity: 0.85; }
+  .btn-danger { background: #c62828; }
+  .err { color: #c62828; font-size: 13px; margin: 8px 0; }
+  .ok { color: #2e7d32; font-size: 13px; margin: 8px 0; }
+  .row { display: flex; gap: 12px; align-items: center; }
+  .small { font-size: 12px; color: #8e8e93; }
+  .hidden { display: none !important; }
+  .form { background: #fafafa; padding: 16px; border-radius: 10px; margin-top: 12px; }
+  .form .row { gap: 8px; }
+  .form input[type="number"] { max-width: 120px; }
+  details > summary { cursor: pointer; padding: 8px; font-weight: 600; }
+  details[open] > summary { border-bottom: 1px solid #eee; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="loginView" class="card login">
+  <h2 style="margin-bottom: 4px;">Super Admin</h2>
+  <p class="small" style="margin-bottom: 16px;">Sign in with your admin credentials.</p>
+  <input id="li_buildingCode" placeholder="Building Code" autocapitalize="characters">
+  <input id="li_email" placeholder="Email" type="email" autocapitalize="off">
+  <input id="li_password" placeholder="Password" type="password">
+  <div id="li_err" class="err"></div>
+  <button class="btn" onclick="login()">Sign in</button>
+</div>
+
+<!-- Dashboard -->
+<div id="dashView" class="hidden">
+  <header>
+    <h1>Code Red SMS — Super Admin</h1>
+    <div class="row">
+      <span class="me" id="me"></span>
+      <button class="btn btn-danger" onclick="logout()">Logout</button>
+    </div>
+  </header>
+  <main>
+    <div class="tabs">
+      <div class="tab active" data-tab="stats" onclick="show('stats')">Overview</div>
+      <div class="tab" data-tab="orgs" onclick="show('orgs')">Organizations</div>
+      <div class="tab" data-tab="users" onclick="show('users')">Users</div>
+      <div class="tab" data-tab="messages" onclick="show('messages')">Messages</div>
+      <div class="tab" data-tab="ledger" onclick="show('ledger')">Credits Ledger</div>
+    </div>
+
+    <div id="tab_stats">
+      <div class="stats" id="stats_grid"></div>
+    </div>
+
+    <div id="tab_orgs" class="hidden">
+      <div class="card"><div id="orgs_table"></div></div>
+    </div>
+
+    <div id="tab_users" class="hidden">
+      <div class="card"><div id="users_table"></div></div>
+    </div>
+
+    <div id="tab_messages" class="hidden">
+      <div class="card"><div id="messages_table"></div></div>
+    </div>
+
+    <div id="tab_ledger" class="hidden">
+      <div class="card"><div id="ledger_table"></div></div>
+    </div>
+  </main>
+</div>
+
+<script>
+// Same-origin requests — admin page is served from the API host
+const API = '/api';
+let token = localStorage.getItem('codered_admin_token') || '';
+let me = null;
+
+function $(id){ return document.getElementById(id); }
+
+async function api(path, opts = {}) {
+  const headers = Object.assign(
+    { 'Content-Type': 'application/json' },
+    token ? { Authorization: 'Bearer ' + token } : {},
+    opts.headers || {}
+  );
+  const res = await fetch(API + path, Object.assign({ headers }, opts));
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem('codered_admin_token'); token = '';
+    showLogin();
+    throw new Error(res.status === 403 ? 'Not a super admin' : 'Session expired');
+  }
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    throw new Error(txt || ('HTTP ' + res.status));
+  }
+  return res.json();
+}
+
+async function login() {
+  const buildingCode = $('li_buildingCode').value.trim().toUpperCase();
+  const email = $('li_email').value.trim().toLowerCase();
+  const password = $('li_password').value;
+  $('li_err').textContent = '';
+  if (!buildingCode || !email || !password) {
+    $('li_err').textContent = 'Fill in all fields'; return;
+  }
+  try {
+    // Web logins still need a deviceId — generate a stable one for this browser
+    let deviceId = localStorage.getItem('codered_admin_device_id');
+    if (!deviceId) {
+      deviceId = 'admin-web-' + Math.random().toString(36).slice(2, 14);
+      localStorage.setItem('codered_admin_device_id', deviceId);
+    }
+    const res = await fetch(API + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ buildingCode, email, password, deviceId, platform: 'web' }),
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      throw new Error(j.message || 'Invalid credentials');
+    }
+    const data = await res.json();
+    token = data.accessToken;
+    localStorage.setItem('codered_admin_token', token);
+
+    // Verify super-admin access
+    me = await api('/admin/whoami');
+    showDash();
+  } catch (e) {
+    $('li_err').textContent = e.message;
+  }
+}
+
+function logout() {
+  localStorage.removeItem('codered_admin_token');
+  token = ''; me = null;
+  showLogin();
+}
+
+function showLogin() {
+  $('loginView').classList.remove('hidden');
+  $('dashView').classList.add('hidden');
+}
+
+async function showDash() {
+  $('loginView').classList.add('hidden');
+  $('dashView').classList.remove('hidden');
+  $('me').textContent = me ? me.email : '';
+  show('stats');
+}
+
+function show(tab) {
+  ['stats','orgs','users','messages','ledger'].forEach(t => {
+    $('tab_'+t).classList.toggle('hidden', t !== tab);
+    document.querySelectorAll('.tab').forEach(el => {
+      el.classList.toggle('active', el.dataset.tab === tab);
+    });
+  });
+  if (tab === 'stats') loadStats();
+  if (tab === 'orgs') loadOrgs();
+  if (tab === 'users') loadUsers();
+  if (tab === 'messages') loadMessages();
+  if (tab === 'ledger') loadLedger();
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+async function loadStats() {
+  const s = await api('/admin/stats');
+  $('stats_grid').innerHTML = `
+    <div class="stat"><div class="label">Organizations</div><div class="value">${s.orgs}</div></div>
+    <div class="stat"><div class="label">Users</div><div class="value">${s.users}</div></div>
+    <div class="stat"><div class="label">Messages</div><div class="value">${s.messages}</div></div>
+    <div class="stat"><div class="label">SMS Sent</div><div class="value">${s.recipientsSent}</div></div>
+    <div class="stat"><div class="label">SMS Failed</div><div class="value">${s.recipientsFailed}</div></div>
+    <div class="stat"><div class="label">Total Credits Held</div><div class="value">${s.totalCreditsHeld.toLocaleString()}</div></div>
+  `;
+}
+
+async function loadOrgs() {
+  const orgs = await api('/admin/orgs');
+  const rows = orgs.map(o => `
+    <tr>
+      <td><b>${escape(o.name)}</b><br><span class="small">${o.code}</span></td>
+      <td>${o._count.users}</td>
+      <td>${o._count.contacts}</td>
+      <td>${o._count.messages}</td>
+      <td>${o.credits.toLocaleString()}</td>
+      <td>${fmtDate(o.createdAt)}</td>
+      <td>
+        <button class="btn" style="font-size:12px;padding:6px 10px" onclick="orgDetail('${o.id}')">View</button>
+      </td>
+    </tr>
+  `).join('');
+  $('orgs_table').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Org</th><th>Users</th><th>Contacts</th><th>Messages</th>
+        <th>Credits</th><th>Created</th><th></th>
+      </tr></thead>
+      <tbody>${rows || '<tr><td colspan="7" class="small">No orgs yet.</td></tr>'}</tbody>
+    </table>
+  `;
+}
+
+async function orgDetail(id) {
+  const d = await api('/admin/orgs/' + id);
+  const usersHtml = d.org.users.map(m => `
+    <tr><td>${escape(m.user.email)}</td><td>${escape(m.user.displayName || '')}</td><td><span class="badge">${m.role}</span></td></tr>
+  `).join('') || '<tr><td colspan="3" class="small">No members.</td></tr>';
+  const ledgerHtml = d.ledger.map(l => `
+    <tr><td>${fmtDate(l.createdAt)}</td><td><span class="badge ${l.type}">${l.type}</span></td><td>${l.amount}</td><td>${escape(l.reason)}</td></tr>
+  `).join('') || '<tr><td colspan="4" class="small">No ledger entries.</td></tr>';
+  const msgHtml = d.recentMessages.map(m => `
+    <tr><td>${escape(m.title)}</td><td><span class="badge ${m.status}">${m.status}</span></td><td>${m._count.recipients}</td><td>${fmtDate(m.createdAt)}</td></tr>
+  `).join('') || '<tr><td colspan="4" class="small">No messages.</td></tr>';
+
+  $('orgs_table').innerHTML = `
+    <button class="btn" style="margin-bottom:16px" onclick="loadOrgs()">← Back to all orgs</button>
+    <h2>${escape(d.org.name)} <span class="small">(${d.org.code})</span></h2>
+    <p class="small">Credits: <b>${d.org.credits.toLocaleString()}</b> · Created ${fmtDate(d.org.createdAt)}</p>
+
+    <div class="form">
+      <h3 style="margin-bottom:8px">Adjust Credits</h3>
+      <p class="small" style="margin-bottom:12px">Use a positive number to grant credits, negative to deduct.</p>
+      <div class="row">
+        <input type="number" id="adj_amount" placeholder="e.g. 100">
+        <input id="adj_reason" placeholder="Reason (required)" style="flex:1">
+        <button class="btn" onclick="adjustCredits('${id}')">Apply</button>
+      </div>
+      <div id="adj_msg"></div>
+    </div>
+
+    <details open style="margin-top:16px">
+      <summary>Members (${d.org.users.length})</summary>
+      <table><thead><tr><th>Email</th><th>Name</th><th>Role</th></tr></thead><tbody>${usersHtml}</tbody></table>
+    </details>
+
+    <details style="margin-top:16px">
+      <summary>Recent Messages (${d.recentMessages.length})</summary>
+      <table><thead><tr><th>Title</th><th>Status</th><th>Recipients</th><th>When</th></tr></thead><tbody>${msgHtml}</tbody></table>
+    </details>
+
+    <details style="margin-top:16px">
+      <summary>Credits Ledger (${d.ledger.length})</summary>
+      <table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Reason</th></tr></thead><tbody>${ledgerHtml}</tbody></table>
+    </details>
+  `;
+}
+
+async function adjustCredits(orgId) {
+  const amount = parseInt($('adj_amount').value, 10);
+  const reason = $('adj_reason').value.trim();
+  $('adj_msg').innerHTML = '';
+  if (!amount || !reason) { $('adj_msg').innerHTML = '<div class="err">Amount and reason are required.</div>'; return; }
+  if (!confirm(`Adjust credits by ${amount}?\n\nReason: ${reason}`)) return;
+  try {
+    const res = await api('/admin/orgs/' + orgId + '/credits', {
+      method: 'POST',
+      body: JSON.stringify({ amount, reason }),
+    });
+    $('adj_msg').innerHTML = `<div class="ok">Updated. New balance: ${res.newCredits}</div>`;
+    setTimeout(() => orgDetail(orgId), 800);
+  } catch (e) {
+    $('adj_msg').innerHTML = '<div class="err">' + escape(e.message) + '</div>';
+  }
+}
+
+async function loadUsers() {
+  const users = await api('/admin/users');
+  const rows = users.map(u => `
+    <tr>
+      <td><b>${escape(u.email)}</b><br><span class="small">${escape(u.displayName || '')}</span></td>
+      <td>${u.memberships.map(m => `${escape(m.org.name)} <span class="badge">${m.role}</span>`).join('<br>') || '—'}</td>
+      <td>${fmtDate(u.createdAt)}</td>
+    </tr>
+  `).join('');
+  $('users_table').innerHTML = `
+    <table>
+      <thead><tr><th>User</th><th>Orgs</th><th>Created</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="3" class="small">No users yet.</td></tr>'}</tbody>
+    </table>
+  `;
+}
+
+async function loadMessages() {
+  const msgs = await api('/admin/messages');
+  const rows = msgs.map(m => `
+    <tr>
+      <td><b>${escape(m.title)}</b></td>
+      <td>${escape(m.org.name)} <span class="small">(${m.org.code})</span></td>
+      <td><span class="badge ${m.status}">${m.status}</span></td>
+      <td>${m._count.recipients}</td>
+      <td>${fmtDate(m.createdAt)}</td>
+      <td>${m.scheduledAt ? fmtDate(m.scheduledAt) : '—'}</td>
+    </tr>
+  `).join('');
+  $('messages_table').innerHTML = `
+    <table>
+      <thead><tr><th>Title</th><th>Org</th><th>Status</th><th>Recipients</th><th>Created</th><th>Scheduled</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="6" class="small">No messages yet.</td></tr>'}</tbody>
+    </table>
+  `;
+}
+
+async function loadLedger() {
+  const entries = await api('/admin/ledger');
+  const rows = entries.map(l => `
+    <tr>
+      <td>${fmtDate(l.createdAt)}</td>
+      <td>${escape(l.org.name)} <span class="small">(${l.org.code})</span></td>
+      <td><span class="badge ${l.type}">${l.type}</span></td>
+      <td>${l.amount}</td>
+      <td>${escape(l.reason)}</td>
+    </tr>
+  `).join('');
+  $('ledger_table').innerHTML = `
+    <table>
+      <thead><tr><th>Date</th><th>Org</th><th>Type</th><th>Amount</th><th>Reason</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="5" class="small">No entries yet.</td></tr>'}</tbody>
+    </table>
+  `;
+}
+
+function escape(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+// Bootstrap
+(async () => {
+  if (token) {
+    try { me = await api('/admin/whoami'); showDash(); }
+    catch { showLogin(); }
+  } else { showLogin(); }
+})();
+</script>
+</body>
+</html>

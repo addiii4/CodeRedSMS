@@ -11,6 +11,7 @@ import { TemplatesModule } from './templates/templates.module';
 import { MessagesModule } from './messages/messages.module';
 import { SmsGlobalModule } from './smsglobal/smsglobal.module';
 import { PaymentsModule } from './payments/payments.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
     imports: [
@@ -25,7 +26,8 @@ import { PaymentsModule } from './payments/payments.module';
         TemplatesModule,
         MessagesModule,
         SmsGlobalModule,
-        PaymentsModule
+        PaymentsModule,
+        AdminModule
     ]
 })
 export class AppModule {}
