@@ -30,9 +30,11 @@ export default function TemplatePreview() {
 
     const handlePrimary = async () => {
       if (mode === 'use') {
-        navigation.navigate('Compose', {
-          presetTitle: title,
-          presetBody: body,
+        // Skip the redundant Compose screen — TemplatePreview already has editable
+        // title + body fields, so go straight to recipient selection.
+        navigation.navigate('SelectGroups', {
+          draftTitle: title,
+          draftBody: body,
         });
         return;
       }
@@ -111,7 +113,7 @@ export default function TemplatePreview() {
             <BottomCTA
                 label={
                     mode === 'use'
-                    ? 'Use Template'
+                    ? 'Use Template · Choose Recipients'
                     : saving
                         ? 'Saving...'
                         : 'Save Changes'

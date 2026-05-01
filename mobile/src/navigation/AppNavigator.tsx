@@ -23,12 +23,15 @@ import ChangePassword from '../screens/ChangePassword';
 import ContactImport from '../screens/ContactImport';
 import ContactUs from '../screens/ContactUs';
 import HelpCenter from '../screens/HelpCenter';
-import PaymentMethods from '../screens/PaymentMethods';
 import Profile from '../screens/Profile';
 import PurchaseHistory from '../screens/PurchaseHistory';
 import LogDetail from '../screens/LogDetail';
 import ContactDetail from '../screens/ContactDetail';
+import OrgSettings from '../screens/OrgSettings';
+import OrgMembers from '../screens/OrgMembers';
+import ForgotPassword from '../screens/ForgotPassword';
 import { AuthProvider } from '../state/auth';
+import { navigationRef } from '../lib/navigationRef';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const linking = {
@@ -45,7 +48,7 @@ const linking = {
 export default function AppNavigator() {
     return (
       <AuthProvider>
-        <NavigationContainer linking={linking}>
+        <NavigationContainer ref={navigationRef} linking={linking}>
           <Stack.Navigator
             initialRouteName="Splash"
             screenOptions={{ headerShown: false }}
@@ -70,12 +73,14 @@ export default function AppNavigator() {
             <Stack.Screen name="PersonEdit" component={PersonEdit} />
             <Stack.Screen name="Profile" component={Profile} />
             <Stack.Screen name="ChangePassword" component={ChangePassword} />
-            <Stack.Screen name="PaymentMethods" component={PaymentMethods} />
             <Stack.Screen name="PurchaseHistory" component={PurchaseHistory} />
             <Stack.Screen name="HelpCenter" component={HelpCenter} />
             <Stack.Screen name="ContactUs" component={ContactUs} />
             <Stack.Screen name="ContactImport" component={ContactImport} />
             <Stack.Screen name="LogDetail" component={LogDetail} />
+            <Stack.Screen name="OrgSettings" component={OrgSettings} />
+            <Stack.Screen name="OrgMembers" component={OrgMembers} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
           </Stack.Navigator>
         </NavigationContainer>
       </AuthProvider>

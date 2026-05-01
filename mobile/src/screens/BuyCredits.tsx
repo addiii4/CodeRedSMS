@@ -1,10 +1,11 @@
-import { View, Text, StyleSheet, TextInput, ScrollView, TextStyle, Linking } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TextStyle, Linking, Alert } from 'react-native';
 import spacing from '../constants/spacing';
 import color from '../constants/color';
 import typography from '../constants/typography';
 import PricingCard from '../components/PricingCard';
 import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
+import HeaderBack from '../components/HeaderBack';
 import useAppNavigation from '../hooks/useAppNavigation';
 import { api } from '../lib/api';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -54,18 +55,24 @@ export default function BuyCredits() {
     useEffect(() => {
         const sub = AppState.addEventListener('change', async (state) => {
             if (state === 'active' && checkingReturn) {
-            try {
-                const res = await paymentsApi.balance();
-
-                // if credits increased → assume payment success
-                if (res.credits > currentCredits) {
-                navigation.navigate('PurchaseHistory');
+                try {
+                    const res = await paymentsApi.balance();
+                    if (res.credits > currentCredits) {
+                        // Credits increased — payment was completed
+                        navigation.navigate('PurchaseHistory');
+                    } else {
+                        // Back in app but credits unchanged — payment was cancelled or not completed
+                        Alert.alert(
+                            'Payment not completed',
+                            'Your payment was cancelled or not completed. No credits were added.',
+                            [{ text: 'OK' }],
+                        );
+                    }
+                } catch (e) {
+                    console.error('Return check failed', e);
+                } finally {
+                    setCheckingReturn(false);
                 }
-            } catch (e) {
-                console.error('Return check failed', e);
-            } finally {
-                setCheckingReturn(false);
-            }
             }
         });
 
@@ -86,7 +93,9 @@ export default function BuyCredits() {
     return (
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.content}>
-                <Text style={styles.header}>Buy Credits</Text>
+                <View style={{ marginHorizontal: -spacing.lg }}>
+                    <HeaderBack title="Buy Credits" />
+                </View>
                 <Text style={styles.balanceText}>Current balance: {currentCredits} credits</Text>
 
                 {/* Plans */}
@@ -170,8 +179,7 @@ export default function BuyCredits() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: color.background, justifyContent: 'space-between' },
-    content: { paddingHorizontal: spacing.lg, marginTop: spacing.margin, paddingBottom: spacing.md },
-    header: { ...typography.title, marginBottom: spacing.md } as TextStyle,
+    content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
 
     grid: { flexDirection: 'row', gap: spacing.md },
     balanceText: {

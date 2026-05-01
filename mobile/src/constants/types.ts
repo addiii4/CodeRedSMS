@@ -39,9 +39,11 @@ export type RootStackParamList = {
     Settings: undefined;
     Profile: undefined;
     ChangePassword: undefined;
-    PaymentMethods: undefined;
     PurchaseHistory: undefined;
     HelpCenter: undefined;
     ContactUs: undefined;
     ContactImport: undefined;
+    OrgSettings: undefined;
+    OrgMembers: undefined;
+    ForgotPassword: undefined;
 };

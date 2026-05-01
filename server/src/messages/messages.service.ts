@@ -27,11 +27,15 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
+    // Built-in scheduler — polls every 15 s for due messages.
+    // No external cron required. Keep the server process alive with PM2 in production:
+    //   pm2 start dist/main.js --name codered-api
     this.poller = setInterval(() => {
       this.processDueMessages().catch((err) => {
         console.error('Scheduled message worker error:', err);
       });
-    }, 15000); // every 15 sec
+    }, 15_000);
+    console.log('⏱  Scheduled message worker started (15 s interval)');
   }
 
   onModuleDestroy() {
@@ -175,9 +179,7 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
   private async sendMessageNow(messageId: string) {
     const message = await this.prisma.message.findUnique({
       where: { id: messageId },
-      include: {
-        recipients: true,
-      },
+      include: { recipients: true },
     });
 
     if (!message) throw new BadRequestException('Message not found');
@@ -198,17 +200,18 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
 
         await this.prisma.messageRecipient.update({
           where: { id: recipient.id },
-          data: {
-            status: 'sent',
-            providerMsgId,
-          },
+          data: { status: 'sent', providerMsgId },
         });
-      } catch (err) {
+      } catch (err: any) {
+        console.error(
+          `[SMS] Failed to send to ${recipient.phoneE164} (message ${messageId}):`,
+          err?.message ?? err,
+        );
         await this.prisma.messageRecipient.update({
           where: { id: recipient.id },
           data: {
             status: 'failed',
-            errorCode: 'SEND_FAILED',
+            errorCode: String(err?.message ?? 'SEND_FAILED').slice(0, 64),
           },
         });
       }
@@ -219,13 +222,38 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
       select: { status: true },
     });
 
-    const hasFailed = recips.some((r) => r.status === 'failed');
-    const finalStatus = hasFailed ? 'failed' : 'sent';
+    const failedCount = recips.filter((r) => r.status === 'failed').length;
+    const finalStatus = failedCount > 0 ? 'failed' : 'sent';
 
     await this.prisma.message.update({
       where: { id: messageId },
       data: { status: finalStatus },
     });
+
+    // Refund credits for any failed recipients — users must not be charged
+    // for messages that were never delivered.
+    if (failedCount > 0) {
+      const segs = countSegments(message.body);
+      const refundAmount = failedCount * segs;
+      await this.prisma.$transaction([
+        this.prisma.organization.update({
+          where: { id: message.orgId },
+          data: { credits: { increment: refundAmount } },
+        }),
+        this.prisma.creditsLedger.create({
+          data: {
+            orgId: message.orgId,
+            type: 'credit',
+            amount: refundAmount,
+            reason: `Refund: ${failedCount} failed recipient${failedCount === 1 ? '' : 's'} for '${message.title}'`,
+          },
+        }),
+      ]);
+      console.log(
+        `[SMS] Refunded ${refundAmount} credit${refundAmount === 1 ? '' : 's'} ` +
+        `for ${failedCount} failed send${failedCount === 1 ? '' : 's'} (message ${messageId})`,
+      );
+    }
   }
 
   private async processDueMessages() {

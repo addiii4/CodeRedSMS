@@ -130,14 +130,9 @@ export default function ScheduleReview() {
       });
 
       Alert.alert(
-        mode === 'Send Now' ? 'Message Sent' : 'Message Scheduled',
-        `${res.recipients} recipients • ${res.segments} segment(s) • ${res.cost} credit(s)`,
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Logs'),
-          },
-        ],
+        mode === 'Send Now' ? '✓ Message Sent' : '✓ Message Scheduled',
+        `${res.cost} credit${res.cost === 1 ? '' : 's'} used`,
+        [{ text: 'OK', onPress: () => navigation.navigate('Dashboard') }],
       );
     } catch (e: any) {
       console.error('Send Message Error:', e);
@@ -168,12 +163,19 @@ export default function ScheduleReview() {
         <View style={styles.card}>
           <Text style={styles.meta}>Recipients</Text>
           <Text style={styles.body}>
-            {groupIds.length} groups · {realRecipientCount} recipient
-            {realRecipientCount === 1 ? '' : 's'}
+            {[
+              groupIds.length > 0 ? `${groupIds.length} group${groupIds.length === 1 ? '' : 's'}` : null,
+              contactIds.length > 0 ? `${contactIds.length} contact${contactIds.length === 1 ? '' : 's'}` : null,
+            ]
+              .filter(Boolean)
+              .join(' + ')}
+            {realRecipientCount > 0
+              ? ` · ${realRecipientCount} recipient${realRecipientCount === 1 ? '' : 's'} total`
+              : ''}
           </Text>
           <Text
             style={styles.link}
-            onPress={() => navigation.navigate('SelectGroups' as never)}
+            onPress={() => navigation.goBack()}
           >
             Edit
           </Text>
@@ -181,13 +183,18 @@ export default function ScheduleReview() {
 
         <View style={styles.card}>
           <Text style={styles.meta}>Message</Text>
+          {!!title && (
+            <Text style={[styles.body, { fontWeight: '600', marginBottom: 4 }]}>
+              {title}
+            </Text>
+          )}
           <Text style={styles.body} numberOfLines={4}>
             {body || 'No message entered'}
           </Text>
           <Text style={styles.subMeta}>{charCount} chars</Text>
           <Text
             style={styles.link}
-            onPress={() => navigation.navigate('Compose' as never)}
+            onPress={() => navigation.pop(2)}
           >
             Edit
           </Text>

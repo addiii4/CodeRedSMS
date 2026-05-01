@@ -4,6 +4,7 @@ import { CurrentUser, ReqUser } from '../auth/current-user.decorator';
 import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
+import { BulkImportDto } from './dto/bulk-import.dto';
 
 @Controller('contacts')
 export class ContactsController {
@@ -19,6 +20,12 @@ export class ContactsController {
     @Post()
     create(@Body() dto: CreateContactDto, @CurrentUser() user: ReqUser) {
         return this.svc.create(dto, user);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('bulk-import')
+    bulkImport(@Body() dto: BulkImportDto, @CurrentUser() user: ReqUser) {
+        return this.svc.bulkImport(dto, user);
     }
 
     @UseGuards(JwtAuthGuard)

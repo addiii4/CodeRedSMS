@@ -16,5 +16,9 @@ export class RegisterDto {
 
     @IsOptional()
     @IsString()
-    platform?: string; // 'ios' | 'android'
+    displayName?: string;
+
+    @IsOptional()
+    @IsString()
+    platform?: string;
 }

@@ -1,4 +1,3 @@
-// src/screens/Profile.tsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TextStyle, ScrollView, Alert } from 'react-native';
 import color from '../constants/color';
@@ -8,33 +7,36 @@ import BottomCTA from '../components/BottomCTA';
 import NavBar from '../components/NavBar';
 import useAppNavigation from '../hooks/useAppNavigation';
 import HeaderBack from '../components/HeaderBack';
-import { usersApi } from '../services/users';
+import { orgsApi } from '../services/orgs';
 
-export default function Profile() {
+export default function OrgSettings() {
     const navigation = useAppNavigation();
-    const [displayName, setDisplayName] = useState('');
-    const [email, setEmail] = useState('');
+    const [name, setName] = useState('');
+    const [code, setCode] = useState('');
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        usersApi.getMe().then(u => {
-            setDisplayName(u.displayName);
-            setEmail(u.email);
+        orgsApi.getOrg().then(org => {
+            setName(org.name);
+            setCode(org.code);
         }).catch(() => {});
     }, []);
 
     async function handleSave() {
-        if (!displayName.trim()) {
-            Alert.alert('Validation', 'Display name cannot be empty.');
+        if (!name.trim()) {
+            Alert.alert('Validation', 'Organisation name cannot be empty.');
             return;
         }
         setSaving(true);
         try {
-            await usersApi.updateMe({ displayName: displayName.trim() });
-            Alert.alert('Saved', 'Profile updated successfully.');
+            await orgsApi.updateOrg({ name: name.trim() });
+            Alert.alert('Saved', 'Organisation settings updated.');
             navigation.goBack();
-        } catch {
-            Alert.alert('Error', 'Failed to update profile. Please try again.');
+        } catch (err: any) {
+            const msg = err?.message?.includes('403') || err?.message?.toLowerCase().includes('forbidden')
+                ? 'Only admins can update organisation settings.'
+                : 'Failed to save. Please try again.';
+            Alert.alert('Error', msg);
         } finally {
             setSaving(false);
         }
@@ -44,23 +46,22 @@ export default function Profile() {
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.content}>
                 <View style={{ marginHorizontal: -spacing.lg }}>
-                    <HeaderBack title="Profile" />
+                    <HeaderBack title="Organisation Settings" />
                 </View>
-                <Text style={styles.label}>Full Name</Text>
+                <Text style={styles.label}>Organisation Name</Text>
                 <TextInput
                     style={styles.input}
-                    placeholder="Your name"
+                    placeholder="e.g. Sunrise Halls"
                     placeholderTextColor="#BDBDBD"
-                    value={displayName}
-                    onChangeText={setDisplayName}
+                    value={name}
+                    onChangeText={setName}
                 />
-                <Text style={[styles.label, { marginTop: spacing.md }]}>Email</Text>
+                <Text style={[styles.label, { marginTop: spacing.md }]}>Building Code</Text>
                 <TextInput
                     style={[styles.input, styles.inputDisabled]}
-                    placeholder="you@example.com"
-                    placeholderTextColor="#BDBDBD"
-                    value={email}
+                    value={code}
                     editable={false}
+                    placeholderTextColor="#BDBDBD"
                 />
                 <View style={{ height: spacing.margin }} />
             </ScrollView>
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
     label: { ...typography.label, color: color.text } as TextStyle,
     input: {
         height: 50, borderWidth: 1, borderColor: color.greyStroke, borderRadius: 12,
-        paddingHorizontal: spacing.md, backgroundColor: '#FFFFFF', marginTop: spacing.sm
+        paddingHorizontal: spacing.md, backgroundColor: '#FFFFFF', marginTop: spacing.sm,
     },
     inputDisabled: { backgroundColor: '#F5F5F5', color: '#9E9E9E' },
 });
