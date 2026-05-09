@@ -52,12 +52,14 @@
 <!-- Login -->
 <div id="loginView" class="card login">
   <h2 style="margin-bottom: 4px;">Super Admin</h2>
-  <p class="small" style="margin-bottom: 16px;">Sign in with your admin credentials.</p>
-  <input id="li_buildingCode" placeholder="Building Code" autocapitalize="characters">
+  <p class="small" style="margin-bottom: 16px;">Sign in with your admin email + password.</p>
   <input id="li_email" placeholder="Email" type="email" autocapitalize="off">
   <input id="li_password" placeholder="Password" type="password">
   <div id="li_err" class="err"></div>
   <button class="btn" onclick="login()">Sign in</button>
+  <p class="small" style="margin-top:16px">
+    Forgot your password? Run <code>npm run admin:setup</code> on the server to reset it.
+  </p>
 </div>
 
 <!-- Dashboard -->
@@ -128,24 +130,17 @@ async function api(path, opts = {}) {
 }
 
 async function login() {
-  const buildingCode = $('li_buildingCode').value.trim().toUpperCase();
   const email = $('li_email').value.trim().toLowerCase();
   const password = $('li_password').value;
   $('li_err').textContent = '';
-  if (!buildingCode || !email || !password) {
+  if (!email || !password) {
     $('li_err').textContent = 'Fill in all fields'; return;
   }
   try {
-    // Web logins still need a deviceId — generate a stable one for this browser
-    let deviceId = localStorage.getItem('codered_admin_device_id');
-    if (!deviceId) {
-      deviceId = 'admin-web-' + Math.random().toString(36).slice(2, 14);
-      localStorage.setItem('codered_admin_device_id', deviceId);
-    }
-    const res = await fetch(API + '/auth/login', {
+    const res = await fetch(API + '/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ buildingCode, email, password, deviceId, platform: 'web' }),
+      body: JSON.stringify({ email, password }),
     });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
@@ -155,7 +150,6 @@ async function login() {
     token = data.accessToken;
     localStorage.setItem('codered_admin_token', token);
 
-    // Verify super-admin access
     me = await api('/admin/whoami');
     showDash();
   } catch (e) {

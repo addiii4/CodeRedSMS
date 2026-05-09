@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "npx nest start --watch",
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/main.js",
+    "build": "tsc -p tsconfig.json && prisma generate",
+    "start": "node dist/src/main.js",
+    "start:prod": "npx prisma migrate deploy && node dist/src/main.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "admin:setup": "tsx scripts/setup-super-admin.ts"
   },
   "keywords": [],
   "author": "",
