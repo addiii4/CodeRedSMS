@@ -1,7 +1,9 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { join } from 'path';
 
 async function bootstrap() {
     // ── Security guard ──────────────────────────────────────────────────────
@@ -21,11 +23,18 @@ async function bootstrap() {
     }
     // ────────────────────────────────────────────────────────────────────────
 
-    const app = await NestFactory.create(AppModule, { cors: true, rawBody: true });
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, { cors: true, rawBody: true });
     app.enableCors({ origin: '*', credentials: false });
+
+    // Serve the super-admin web dashboard at /admin/ (before the global API prefix).
+    // Source: server/public/admin/index.html — resolved from the server's cwd
+    // (always `server/` whether started in dev via ts-node or prod from dist).
+    app.useStaticAssets(join(process.cwd(), 'public'), { prefix: '/' });
+
     app.setGlobalPrefix('api');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.listen(process.env.PORT ?? 3000);
     console.log(`🚀 API running on port ${process.env.PORT ?? 3000}`);
+    console.log(`🛡  Super-admin dashboard at /admin/`);
 }
 bootstrap();
