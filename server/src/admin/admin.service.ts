@@ -42,12 +42,12 @@ export class AdminService {
       );
     }
 
-    const accessToken = this.jwt.sign({
-      sub: user.id,
-      orgId: membership.orgId,
-      email: user.email,
-      role: 'super_admin',
-    });
+    // Super-admin tokens live longer (24h) than user tokens (1h) so admins
+    // don't get kicked out every hour while monitoring the dashboard.
+    const accessToken = this.jwt.sign(
+      { sub: user.id, orgId: membership.orgId, email: user.email, role: 'super_admin' },
+      { expiresIn: '24h' },
+    );
 
     return { accessToken, email: user.email };
   }
@@ -88,7 +88,71 @@ export class AdminService {
         },
       },
     });
-    return orgs;
+
+    // Health classification per org. Drives the colour badge in the admin UI.
+    //   red    = out of credits (0) — can't send any messages
+    //   yellow = low credits (< 20) — running low, should top up
+    //   green  = healthy
+    // SYSADMIN org is always shown as 'system' so admins know it's the internal one.
+    return orgs.map((o) => {
+      let health: 'green' | 'yellow' | 'red' | 'system' = 'green';
+      if (o.code === 'SYSADMIN') health = 'system';
+      else if (o.credits <= 0) health = 'red';
+      else if (o.credits < 20) health = 'yellow';
+      return { ...o, health };
+    });
+  }
+
+  async updateOrg(orgId: string, data: { name?: string }) {
+    const org = await this.prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) throw new BadRequestException('Org not found');
+    if (org.code === 'SYSADMIN') throw new BadRequestException('Cannot modify the system admin org');
+
+    return this.prisma.organization.update({
+      where: { id: orgId },
+      data: { name: data.name?.trim() || org.name },
+    });
+  }
+
+  async deleteOrg(orgId: string) {
+    const org = await this.prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) throw new BadRequestException('Org not found');
+    if (org.code === 'SYSADMIN') throw new BadRequestException('Cannot delete the system admin org');
+
+    // onDelete: Cascade on all relations means a single delete wipes contacts,
+    // groups, messages, memberships, devices, templates, ledger entries.
+    await this.prisma.organization.delete({ where: { id: orgId } });
+    return { ok: true };
+  }
+
+  async updateUser(userId: string, data: { displayName?: string; email?: string }) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+
+    const updates: { displayName?: string; email?: string } = {};
+    if (data.displayName?.trim()) updates.displayName = data.displayName.trim();
+    if (data.email?.trim()) updates.email = data.email.trim().toLowerCase();
+
+    if (Object.keys(updates).length === 0) return user;
+    return this.prisma.user.update({ where: { id: userId }, data: updates });
+  }
+
+  async deleteUser(userId: string, actorEmail: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+
+    // Never allow deletion of any super-admin (themselves or other admins)
+    const allowlist = (process.env.SUPER_ADMIN_EMAILS ?? '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    if (allowlist.includes(user.email.toLowerCase())) {
+      throw new BadRequestException('Cannot delete a super-admin account');
+    }
+
+    await this.prisma.user.delete({ where: { id: userId } });
+    console.log(`[admin] ${actorEmail} deleted user ${user.email}`);
+    return { ok: true };
   }
 
   async orgDetail(orgId: string) {

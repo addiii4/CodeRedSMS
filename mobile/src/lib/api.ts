@@ -6,15 +6,25 @@ let accessToken: string | null = null;
 export function setAccessToken(token: string | null) { accessToken = token; }
 
 /**
- * Registered by auth.tsx on mount.
- * Called whenever any API response comes back with HTTP 401 (token expired / invalid).
- * The handler should clear the session and navigate to Login.
+ * Registered by auth.tsx on mount. Fires when ANY request (except those that
+ * opt out via { skipAuthHandler: true }) gets HTTP 401. Used to clear the
+ * stored session and bounce the user back to Login.
  */
 type AuthFailureHandler = () => void;
 let authFailureHandler: AuthFailureHandler | null = null;
 export function setAuthFailureHandler(fn: AuthFailureHandler | null) {
     authFailureHandler = fn;
 }
+
+/** Per-request options. Currently only one knob. */
+export type RequestOptions = {
+    /**
+     * Skip the global 401 handler for this request. Use for endpoints where a
+     * 401 is an EXPECTED outcome of a user action (e.g. /auth/verify-password
+     * — wrong password returns 401 but should NOT log the user out).
+     */
+    skipAuthHandler?: boolean;
+};
 
 /** Extracts a human-readable message from NestJS error responses. */
 function parseErrorMessage(body: string, status: number): string {
@@ -39,7 +49,12 @@ function parseErrorMessage(body: string, status: number): string {
     return fallbacks[status] ?? `Something went wrong (${status}).`;
 }
 
-async function request<T>(method: HttpMethod, path: string, body?: any): Promise<T> {
+async function request<T>(
+    method: HttpMethod,
+    path: string,
+    body?: any,
+    options: RequestOptions = {},
+): Promise<T> {
     const res = await fetch(`${API_BASE}${path}`, {
         method,
         headers: {
@@ -53,7 +68,8 @@ async function request<T>(method: HttpMethod, path: string, body?: any): Promise
         const text = await res.text().catch(() => '');
 
         // 401 = token expired or invalid — trigger global session clear
-        if (res.status === 401) {
+        // UNLESS the caller has opted out (e.g. verify-password where 401 is normal).
+        if (res.status === 401 && !options.skipAuthHandler) {
             authFailureHandler?.();
         }
 
@@ -64,8 +80,8 @@ async function request<T>(method: HttpMethod, path: string, body?: any): Promise
 }
 
 export const api = {
-    get:    <T>(path: string)             => request<T>('GET',    path),
-    post:   <T>(path: string, body?: any) => request<T>('POST',   path, body),
-    patch:  <T>(path: string, body?: any) => request<T>('PATCH',  path, body),
-    delete: <T>(path: string, body?: any) => request<T>('DELETE', path, body),
+    get:    <T>(path: string,                opts?: RequestOptions) => request<T>('GET',    path, undefined, opts),
+    post:   <T>(path: string, body?: any,    opts?: RequestOptions) => request<T>('POST',   path, body,      opts),
+    patch:  <T>(path: string, body?: any,    opts?: RequestOptions) => request<T>('PATCH',  path, body,      opts),
+    delete: <T>(path: string, body?: any,    opts?: RequestOptions) => request<T>('DELETE', path, body,      opts),
 };

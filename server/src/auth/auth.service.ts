@@ -51,7 +51,7 @@ export class AuthService {
 
     await this.prisma.membership.create({ data: { userId: user.id, orgId: org.id, role } });
 
-    // Grant 20 free welcome credits to brand-new orgs
+    // Brand-new orgs: welcome credits + seed emergency-focused default templates
     if (memberCount === 0) {
       await this.prisma.organization.update({
         where: { id: org.id },
@@ -64,6 +64,33 @@ export class AuthService {
           amount: 20,
           reason: 'Welcome bonus — 20 free credits',
         },
+      });
+
+      // 5 default templates new orgs can use immediately. They can edit or delete any of these.
+      const defaultTemplates = [
+        {
+          title: 'Fire Evacuation',
+          body: '🚨 FIRE ALARM activated. Please evacuate the building immediately via your nearest exit. Do not use lifts. Wait at the assembly point.',
+        },
+        {
+          title: 'Severe Weather Warning',
+          body: '⚠️ Severe weather warning for our area. Please remain indoors, secure outdoor items and avoid travel until further notice.',
+        },
+        {
+          title: 'Emergency Lockdown',
+          body: '🚨 LOCKDOWN in effect. Lock all doors, stay away from windows and remain in place until you receive the all-clear message.',
+        },
+        {
+          title: 'Maintenance Notice',
+          body: 'Scheduled maintenance will occur shortly. Some services may be briefly unavailable. We apologise for any inconvenience.',
+        },
+        {
+          title: 'All Clear',
+          body: '✅ ALL CLEAR. The situation has been resolved and you may resume normal activities. Thank you for your cooperation.',
+        },
+      ];
+      await this.prisma.template.createMany({
+        data: defaultTemplates.map((t) => ({ orgId: org.id, ...t })),
       });
     }
 

@@ -144,25 +144,7 @@ export default function Dashboard() {
                     </View>
                 </SafeAreaView>
 
-                {/* Recent Activity */}
-                <SecTitle text="Recent Activity" />
-                {recentLogs.length === 0 ? (
-                    <ActivityCard text="No recent activity yet" />
-                ) : (
-                    recentLogs.map((item) => (
-                        <LogCard
-                            key={item.id}
-                            item={item}
-                            onPress={() => navigation.navigate('LogDetail', { id: item.id })}
-                        />
-                    ))
-                )}
-                <PrimaryButton
-                    label="View All Logs"
-                    onPress={() => navigation.navigate('Logs' as never)}
-                />
-
-                {/* Quick Actions */}
+                {/* Quick Actions — top half */}
                 <SecTitle text="Quick Actions" />
                 <View style={styles.actionsGrid}>
                     <QuickActionButton
@@ -185,6 +167,26 @@ export default function Dashboard() {
                         label="Logs"
                         icon="list"
                         lib="mat"
+                        onPress={() => navigation.navigate('Logs' as never)}
+                    />
+                </View>
+
+                {/* Recent Activity — bottom half */}
+                <View style={{ marginTop: Spacing.lg }}>
+                    <SecTitle text="Recent Activity" />
+                    {recentLogs.length === 0 ? (
+                        <ActivityCard text="No recent activity yet" />
+                    ) : (
+                        recentLogs.map((item) => (
+                            <LogCard
+                                key={item.id}
+                                item={item}
+                                onPress={() => navigation.navigate('LogDetail', { id: item.id })}
+                            />
+                        ))
+                    )}
+                    <PrimaryButton
+                        label="View All Logs"
                         onPress={() => navigation.navigate('Logs' as never)}
                     />
                 </View>

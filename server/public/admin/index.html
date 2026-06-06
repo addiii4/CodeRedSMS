@@ -23,6 +23,15 @@
   th, td { padding: 10px; text-align: left; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
   th { background: #fafafa; font-weight: 600; color: #555; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
   tr:hover td { background: #fafafa; }
+
+  /* Health dot */
+  .health { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+  .health .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .dot.green { background: #2e7d32; }
+  .dot.yellow { background: #f57f17; }
+  .dot.red { background: #c62828; }
+  .dot.system { background: #757575; }
+
   .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
   .badge.sent { background: #e8f5e8; color: #2e7d32; }
   .badge.failed { background: #ffebee; color: #c62828; }
@@ -30,13 +39,17 @@
   .badge.sending { background: #e3f2fd; color: #1565c0; }
   .badge.credit { background: #e8f5e8; color: #2e7d32; }
   .badge.debit { background: #ffebee; color: #c62828; }
+
   .login { max-width: 400px; margin: 80px auto; }
   .login input, .form input { width: 100%; padding: 10px 12px; border: 1px solid #d1d1d6; border-radius: 8px; font-size: 14px; margin-bottom: 12px; }
-  .btn { background: #1c1c1e; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn { background: #1c1c1e; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
   .btn:hover { opacity: 0.85; }
   .btn-danger { background: #c62828; }
+  .btn-small { padding: 4px 10px; font-size: 12px; }
+  .btn-light { background: #fff; color: #1c1c1e; border: 1px solid #d1d1d6; }
   .err { color: #c62828; font-size: 13px; margin: 8px 0; }
   .ok { color: #2e7d32; font-size: 13px; margin: 8px 0; }
+  .info { background: #fff8e1; border: 1px solid #ffc107; color: #5d4037; padding: 12px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
   .row { display: flex; gap: 12px; align-items: center; }
   .small { font-size: 12px; color: #8e8e93; }
   .hidden { display: none !important; }
@@ -45,6 +58,8 @@
   .form input[type="number"] { max-width: 120px; }
   details > summary { cursor: pointer; padding: 8px; font-weight: 600; }
   details[open] > summary { border-bottom: 1px solid #eee; margin-bottom: 8px; }
+
+  .actions { display: flex; gap: 6px; flex-wrap: wrap; }
 </style>
 </head>
 <body>
@@ -68,10 +83,11 @@
     <h1>Code Red SMS — Super Admin</h1>
     <div class="row">
       <span class="me" id="me"></span>
-      <button class="btn btn-danger" onclick="logout()">Logout</button>
+      <button class="btn btn-danger btn-small" onclick="logout()">Logout</button>
     </div>
   </header>
   <main>
+    <div id="banner"></div>
     <div class="tabs">
       <div class="tab active" data-tab="stats" onclick="show('stats')">Overview</div>
       <div class="tab" data-tab="orgs" onclick="show('orgs')">Organizations</div>
@@ -108,26 +124,66 @@ const API = '/api';
 let token = localStorage.getItem('codered_admin_token') || '';
 let me = null;
 
+// Allowlist of super-admin emails (cached client-side so we can skip showing
+// delete buttons for super-admin user rows). Set after login.
+let adminEmailsCache = [];
+
 function $(id){ return document.getElementById(id); }
 
+/**
+ * Wrapped fetch with cold-start retry: Render's free tier sleeps the service,
+ * so the first request after idle gets 502/503 from the edge. We retry once
+ * after a short wait with a "waking up" banner so the admin doesn't think
+ * the dashboard is broken.
+ */
 async function api(path, opts = {}) {
   const headers = Object.assign(
     { 'Content-Type': 'application/json' },
     token ? { Authorization: 'Bearer ' + token } : {},
     opts.headers || {}
   );
-  const res = await fetch(API + path, Object.assign({ headers }, opts));
-  if (res.status === 401 || res.status === 403) {
+
+  const doFetch = () => fetch(API + path, Object.assign({ headers }, opts));
+
+  let res;
+  try {
+    res = await doFetch();
+  } catch (networkErr) {
+    // Pure network failure (server completely down). One retry with banner.
+    setBanner('Waking up server — retrying in 5 sec…');
+    await new Promise(r => setTimeout(r, 5000));
+    res = await doFetch();
+    clearBanner();
+  }
+
+  // 502/503/504 = Render gateway error during cold start. Retry once.
+  if (res.status >= 502 && res.status <= 504) {
+    setBanner('Server is waking up (free hosting cold-start). Retrying in 15 sec…');
+    await new Promise(r => setTimeout(r, 15000));
+    res = await doFetch();
+    clearBanner();
+  }
+
+  if (res.status === 401) {
+    // Token expired or invalid
     localStorage.removeItem('codered_admin_token'); token = '';
     showLogin();
-    throw new Error(res.status === 403 ? 'Not a super admin' : 'Session expired');
+    throw new Error('Your session expired. Please sign in again.');
+  }
+  if (res.status === 403) {
+    throw new Error('Your account is not authorised as a super admin.');
   }
   if (!res.ok) {
     const txt = await res.text().catch(() => '');
-    throw new Error(txt || ('HTTP ' + res.status));
+    let msg = txt;
+    try { const j = JSON.parse(txt); if (j.message) msg = Array.isArray(j.message) ? j.message[0] : j.message; } catch {}
+    throw new Error(msg || ('HTTP ' + res.status));
   }
   return res.json();
 }
+
+function setBanner(text) { $('banner').innerHTML = '<div class="info">⏳ ' + text + '</div>'; }
+function clearBanner() { $('banner').innerHTML = ''; }
 
 async function login() {
   const email = $('li_email').value.trim().toLowerCase();
@@ -151,6 +207,7 @@ async function login() {
     localStorage.setItem('codered_admin_token', token);
 
     me = await api('/admin/whoami');
+    adminEmailsCache = [me.email.toLowerCase()];
     showDash();
   } catch (e) {
     $('li_err').textContent = e.message;
@@ -159,7 +216,7 @@ async function login() {
 
 function logout() {
   localStorage.removeItem('codered_admin_token');
-  token = ''; me = null;
+  token = ''; me = null; adminEmailsCache = [];
   showLogin();
 }
 
@@ -194,6 +251,15 @@ function fmtDate(d) {
   return new Date(d).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+function healthDot(h) {
+  const labels = { green: 'Healthy', yellow: 'Low credits', red: 'Out of credits', system: 'System' };
+  return `<span class="health"><span class="dot ${h}"></span>${labels[h] || h}</span>`;
+}
+
+function isSuperAdmin(email) {
+  return adminEmailsCache.includes((email || '').toLowerCase());
+}
+
 async function loadStats() {
   const s = await api('/admin/stats');
   $('stats_grid').innerHTML = `
@@ -210,6 +276,7 @@ async function loadOrgs() {
   const orgs = await api('/admin/orgs');
   const rows = orgs.map(o => `
     <tr>
+      <td>${healthDot(o.health)}</td>
       <td><b>${escape(o.name)}</b><br><span class="small">${o.code}</span></td>
       <td>${o._count.users}</td>
       <td>${o._count.contacts}</td>
@@ -217,19 +284,43 @@ async function loadOrgs() {
       <td>${o.credits.toLocaleString()}</td>
       <td>${fmtDate(o.createdAt)}</td>
       <td>
-        <button class="btn" style="font-size:12px;padding:6px 10px" onclick="orgDetail('${o.id}')">View</button>
+        <div class="actions">
+          <button class="btn btn-small" onclick="orgDetail('${o.id}')">View</button>
+          ${o.code !== 'SYSADMIN' ? `<button class="btn btn-small btn-light" onclick="renameOrg('${o.id}', '${escape(o.name).replace(/'/g, '&#39;')}')">Rename</button>` : ''}
+          ${o.code !== 'SYSADMIN' ? `<button class="btn btn-small btn-danger" onclick="confirmDeleteOrg('${o.id}', '${escape(o.name).replace(/'/g, '&#39;')}')">Delete</button>` : ''}
+        </div>
       </td>
     </tr>
   `).join('');
   $('orgs_table').innerHTML = `
     <table>
       <thead><tr>
-        <th>Org</th><th>Users</th><th>Contacts</th><th>Messages</th>
+        <th>Health</th><th>Org</th><th>Users</th><th>Contacts</th><th>Messages</th>
         <th>Credits</th><th>Created</th><th></th>
       </tr></thead>
-      <tbody>${rows || '<tr><td colspan="7" class="small">No orgs yet.</td></tr>'}</tbody>
+      <tbody>${rows || '<tr><td colspan="8" class="small">No orgs yet.</td></tr>'}</tbody>
     </table>
   `;
+}
+
+async function renameOrg(id, currentName) {
+  const next = prompt('New organization name:', currentName);
+  if (!next || next.trim() === currentName) return;
+  try {
+    await api('/admin/orgs/' + id, { method: 'PATCH', body: JSON.stringify({ name: next.trim() }) });
+    loadOrgs();
+  } catch (e) { alert('Update failed: ' + e.message); }
+}
+
+async function confirmDeleteOrg(id, name) {
+  if (!confirm(`Delete organization "${name}"?\n\nThis permanently removes all of its users, contacts, groups, templates, messages and credit history. Cannot be undone.`)) return;
+  if (!confirm('Are you absolutely sure? Type-confirmation below.')) return;
+  const typed = prompt(`Type the org name "${name}" to confirm:`);
+  if (typed !== name) { alert('Name did not match. Deletion cancelled.'); return; }
+  try {
+    await api('/admin/orgs/' + id, { method: 'DELETE' });
+    loadOrgs();
+  } catch (e) { alert('Delete failed: ' + e.message); }
 }
 
 async function orgDetail(id) {
@@ -245,7 +336,7 @@ async function orgDetail(id) {
   `).join('') || '<tr><td colspan="4" class="small">No messages.</td></tr>';
 
   $('orgs_table').innerHTML = `
-    <button class="btn" style="margin-bottom:16px" onclick="loadOrgs()">← Back to all orgs</button>
+    <button class="btn btn-small btn-light" style="margin-bottom:16px" onclick="loadOrgs()">← Back to all orgs</button>
     <h2>${escape(d.org.name)} <span class="small">(${d.org.code})</span></h2>
     <p class="small">Credits: <b>${d.org.credits.toLocaleString()}</b> · Created ${fmtDate(d.org.createdAt)}</p>
 
@@ -297,19 +388,50 @@ async function adjustCredits(orgId) {
 
 async function loadUsers() {
   const users = await api('/admin/users');
-  const rows = users.map(u => `
-    <tr>
-      <td><b>${escape(u.email)}</b><br><span class="small">${escape(u.displayName || '')}</span></td>
-      <td>${u.memberships.map(m => `${escape(m.org.name)} <span class="badge">${m.role}</span>`).join('<br>') || '—'}</td>
-      <td>${fmtDate(u.createdAt)}</td>
-    </tr>
-  `).join('');
+  const rows = users.map(u => {
+    const protectedRow = isSuperAdmin(u.email);
+    return `
+      <tr>
+        <td><b>${escape(u.email)}</b>${protectedRow ? ' <span class="badge">admin</span>' : ''}<br><span class="small">${escape(u.displayName || '')}</span></td>
+        <td>${u.memberships.map(m => `${escape(m.org.name)} <span class="badge">${m.role}</span>`).join('<br>') || '—'}</td>
+        <td>${fmtDate(u.createdAt)}</td>
+        <td>
+          <div class="actions">
+            ${!protectedRow ? `<button class="btn btn-small btn-light" onclick="editUser('${u.id}', '${escape(u.email).replace(/'/g, '&#39;')}', '${escape(u.displayName || '').replace(/'/g, '&#39;')}')">Edit</button>` : ''}
+            ${!protectedRow ? `<button class="btn btn-small btn-danger" onclick="confirmDeleteUser('${u.id}', '${escape(u.email).replace(/'/g, '&#39;')}')">Delete</button>` : ''}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
   $('users_table').innerHTML = `
     <table>
-      <thead><tr><th>User</th><th>Orgs</th><th>Created</th></tr></thead>
-      <tbody>${rows || '<tr><td colspan="3" class="small">No users yet.</td></tr>'}</tbody>
+      <thead><tr><th>User</th><th>Orgs</th><th>Created</th><th></th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="4" class="small">No users yet.</td></tr>'}</tbody>
     </table>
   `;
+}
+
+async function editUser(id, currentEmail, currentName) {
+  const nextName = prompt('Display name:', currentName);
+  if (nextName === null) return;
+  const nextEmail = prompt('Email:', currentEmail);
+  if (nextEmail === null) return;
+  try {
+    await api('/admin/users/' + id, {
+      method: 'PATCH',
+      body: JSON.stringify({ displayName: nextName, email: nextEmail }),
+    });
+    loadUsers();
+  } catch (e) { alert('Update failed: ' + e.message); }
+}
+
+async function confirmDeleteUser(id, email) {
+  if (!confirm(`Delete user "${email}"?\n\nThis removes them from all orgs and deletes their device sessions. Cannot be undone.`)) return;
+  try {
+    await api('/admin/users/' + id, { method: 'DELETE' });
+    loadUsers();
+  } catch (e) { alert('Delete failed: ' + e.message); }
 }
 
 async function loadMessages() {
@@ -358,8 +480,11 @@ function escape(s) {
 // Bootstrap
 (async () => {
   if (token) {
-    try { me = await api('/admin/whoami'); showDash(); }
-    catch { showLogin(); }
+    try {
+      me = await api('/admin/whoami');
+      adminEmailsCache = [me.email.toLowerCase()];
+      showDash();
+    } catch { showLogin(); }
   } else { showLogin(); }
 })();
 </script>

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt.guard';
 import { CurrentUser, ReqUser } from '../auth/current-user.decorator';
 import { SuperAdminGuard } from './super-admin.guard';
@@ -66,5 +66,31 @@ export class AdminController {
     @Body() body: { amount: number; reason: string },
   ) {
     return this.admin.adjustCredits(id, body.amount, body.reason, user.email ?? 'unknown');
+  }
+
+  // ── CRUD on orgs and users ──────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Patch('orgs/:id')
+  updateOrg(@Param('id') id: string, @Body() body: { name?: string }) {
+    return this.admin.updateOrg(id, body);
+  }
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Delete('orgs/:id')
+  deleteOrg(@Param('id') id: string) {
+    return this.admin.deleteOrg(id);
+  }
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Patch('users/:id')
+  updateUser(@Param('id') id: string, @Body() body: { displayName?: string; email?: string }) {
+    return this.admin.updateUser(id, body);
+  }
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Delete('users/:id')
+  deleteUser(@CurrentUser() user: ReqUser, @Param('id') id: string) {
+    return this.admin.deleteUser(id, user.email ?? 'unknown');
   }
 }
