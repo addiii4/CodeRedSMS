@@ -145,7 +145,7 @@ export default function Dashboard() {
                 </SafeAreaView>
 
                 {/* Quick Actions — top half */}
-                <SecTitle text="Quick Actions" />
+                <Text style={styles.sectionTitle}>Quick Actions</Text>
                 <View style={styles.actionsGrid}>
                     <QuickActionButton
                         label="Buy Credits"
@@ -172,8 +172,8 @@ export default function Dashboard() {
                 </View>
 
                 {/* Recent Activity — bottom half */}
-                <View style={{ marginTop: Spacing.lg }}>
-                    <SecTitle text="Recent Activity" />
+                <View style={{ marginTop: Spacing.md }}>
+                    <Text style={styles.sectionTitle}>Recent Activity</Text>
                     {recentLogs.length === 0 ? (
                         <ActivityCard text="No recent activity yet" />
                     ) : (
@@ -217,20 +217,27 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     scrollContent: {
         paddingHorizontal: Spacing.lg,
-        paddingBottom: Spacing.xl + 72,
+        // 64 (NavBar) + 34 (home indicator) + 24 buffer = 122px clearance
+        // for the View All Logs button so it never hugs the plus icon.
+        paddingBottom: 122,
     },
     header: {
-        marginBottom: Spacing.lg,
+        marginBottom: Spacing.sm,           // was lg (24) → sm (8)
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
     title: { ...Typography.title } as TextStyle,
+    sectionTitle: {
+        ...Typography.sectionTitle,
+        marginTop: Spacing.md,              // was 24 → 16
+        marginBottom: Spacing.sm,           // was 12 → 8
+    } as TextStyle,
     actionsGrid: {
-        marginTop: Spacing.lg,
+        marginTop: Spacing.sm,              // was lg (24) → sm (8)
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        rowGap: Spacing.lg,
+        rowGap: Spacing.md,                 // was lg (24) → md (16)
     },
 });

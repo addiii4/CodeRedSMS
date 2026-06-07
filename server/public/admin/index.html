@@ -7,24 +7,26 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f7; color: #1c1c1e; }
-  header { background: #1c1c1e; color: #fff; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
-  header h1 { font-size: 18px; font-weight: 600; }
+  header { background: #1c1c1e; color: #fff; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+  header h1 { font-size: 17px; font-weight: 600; }
   header .me { font-size: 13px; opacity: 0.8; }
   main { max-width: 1200px; margin: 0 auto; padding: 24px; }
-  .card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+
+  .card { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
   .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
   .stat { background: #fff; padding: 16px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
   .stat .label { font-size: 12px; text-transform: uppercase; color: #8e8e93; letter-spacing: 0.5px; }
   .stat .value { font-size: 26px; font-weight: 700; margin-top: 4px; }
+
   .tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
-  .tab { background: #fff; border: 1px solid #e5e5ea; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .tab { background: #fff; border: 1px solid #e5e5ea; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; user-select: none; }
   .tab.active { background: #1c1c1e; color: #fff; border-color: #1c1c1e; }
+
   table { width: 100%; border-collapse: collapse; }
   th, td { padding: 10px; text-align: left; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
   th { background: #fafafa; font-weight: 600; color: #555; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
   tr:hover td { background: #fafafa; }
 
-  /* Health dot */
   .health { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
   .health .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
   .dot.green { background: #2e7d32; }
@@ -58,8 +60,37 @@
   .form input[type="number"] { max-width: 120px; }
   details > summary { cursor: pointer; padding: 8px; font-weight: 600; }
   details[open] > summary { border-bottom: 1px solid #eee; margin-bottom: 8px; }
-
   .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* Tab toolbar (search + export) */
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
+  .search { flex: 1; max-width: 320px; padding: 8px 12px; border: 1px solid #d1d1d6; border-radius: 8px; font-size: 13px; background: #fff; }
+  .auto-refresh { font-size: 12px; color: #8e8e93; display: flex; align-items: center; gap: 6px; }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: #2e7d32; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* Notifications bell */
+  .bell-wrap { position: relative; cursor: pointer; padding: 6px; }
+  .bell { font-size: 20px; }
+  .bell-badge { position: absolute; top: 0; right: 0; background: #c62828; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 10px; min-width: 16px; text-align: center; }
+  .notif-panel {
+    position: absolute; top: 100%; right: 0; margin-top: 8px;
+    background: #fff; color: #1c1c1e; width: 360px; max-height: 480px; overflow-y: auto;
+    border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 200;
+  }
+  .notif-panel .head { padding: 12px 16px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+  .notif-panel .head h3 { font-size: 14px; }
+  .notif-panel .empty { padding: 24px; text-align: center; color: #8e8e93; font-size: 13px; }
+  .notif-item { padding: 12px 16px; border-bottom: 1px solid #f5f5f5; font-size: 13px; cursor: pointer; }
+  .notif-item:hover { background: #fafafa; }
+  .notif-item .t { font-weight: 600; margin-bottom: 2px; }
+  .notif-item .d { color: #555; font-size: 12px; }
+  .notif-item .when { color: #8e8e93; font-size: 11px; margin-top: 2px; }
+  .notif-item.danger { border-left: 3px solid #c62828; }
+  .notif-item.warning { border-left: 3px solid #f57f17; }
+  .notif-item.success { border-left: 3px solid #2e7d32; }
+  .notif-item.info { border-left: 3px solid #1565c0; }
 </style>
 </head>
 <body>
@@ -82,6 +113,17 @@
   <header>
     <h1>Code Red SMS — Super Admin</h1>
     <div class="row">
+      <div class="bell-wrap" onclick="toggleNotifs()">
+        <span class="bell">🔔</span>
+        <span id="bell_badge" class="bell-badge hidden">0</span>
+        <div id="notif_panel" class="notif-panel hidden">
+          <div class="head">
+            <h3>Notifications</h3>
+            <button class="btn btn-small btn-light" onclick="markAllRead(event)">Mark all read</button>
+          </div>
+          <div id="notif_list"></div>
+        </div>
+      </div>
       <span class="me" id="me"></span>
       <button class="btn btn-danger btn-small" onclick="logout()">Logout</button>
     </div>
@@ -97,82 +139,99 @@
     </div>
 
     <div id="tab_stats">
+      <div class="toolbar">
+        <div></div>
+        <div class="auto-refresh"><span class="pulse"></span><span id="last_updated">—</span></div>
+      </div>
       <div class="stats" id="stats_grid"></div>
     </div>
 
     <div id="tab_orgs" class="hidden">
+      <div class="toolbar">
+        <input class="search" id="search_orgs" placeholder="Search orgs by name or code…" oninput="renderOrgs()">
+        <button class="btn btn-small btn-light" onclick="exportCsv('orgs')">Export CSV</button>
+      </div>
       <div class="card"><div id="orgs_table"></div></div>
     </div>
 
     <div id="tab_users" class="hidden">
+      <div class="toolbar">
+        <input class="search" id="search_users" placeholder="Search users by email or name…" oninput="renderUsers()">
+        <button class="btn btn-small btn-light" onclick="exportCsv('users')">Export CSV</button>
+      </div>
       <div class="card"><div id="users_table"></div></div>
     </div>
 
     <div id="tab_messages" class="hidden">
+      <div class="toolbar">
+        <input class="search" id="search_messages" placeholder="Search messages by title or org…" oninput="renderMessages()">
+        <button class="btn btn-small btn-light" onclick="exportCsv('messages')">Export CSV</button>
+      </div>
       <div class="card"><div id="messages_table"></div></div>
     </div>
 
     <div id="tab_ledger" class="hidden">
+      <div class="toolbar">
+        <input class="search" id="search_ledger" placeholder="Search ledger entries…" oninput="renderLedger()">
+        <button class="btn btn-small btn-light" onclick="exportCsv('ledger')">Export CSV</button>
+      </div>
       <div class="card"><div id="ledger_table"></div></div>
     </div>
   </main>
 </div>
 
 <script>
-// Same-origin requests — admin page is served from the API host
 const API = '/api';
 let token = localStorage.getItem('codered_admin_token') || '';
 let me = null;
-
-// Allowlist of super-admin emails (cached client-side so we can skip showing
-// delete buttons for super-admin user rows). Set after login.
 let adminEmailsCache = [];
+
+// Cached data — so search filters work without re-fetching, and we can export CSVs.
+let cachedOrgs = [];
+let cachedUsers = [];
+let cachedMessages = [];
+let cachedLedger = [];
+let cachedEvents = [];
+
+// Notifications: track which event ids the user has "seen" so the badge resets.
+let seenEventIds = JSON.parse(localStorage.getItem('codered_admin_seen') || '[]');
+
+// Auto-refresh timers
+let statsTimer = null;
+let eventsTimer = null;
 
 function $(id){ return document.getElementById(id); }
 
-/**
- * Wrapped fetch with cold-start retry: Render's free tier sleeps the service,
- * so the first request after idle gets 502/503 from the edge. We retry once
- * after a short wait with a "waking up" banner so the admin doesn't think
- * the dashboard is broken.
- */
+/* ── Fetch wrapper with Render cold-start retry ──────────────────────────── */
 async function api(path, opts = {}) {
   const headers = Object.assign(
     { 'Content-Type': 'application/json' },
     token ? { Authorization: 'Bearer ' + token } : {},
     opts.headers || {}
   );
-
   const doFetch = () => fetch(API + path, Object.assign({ headers }, opts));
 
   let res;
   try {
     res = await doFetch();
-  } catch (networkErr) {
-    // Pure network failure (server completely down). One retry with banner.
+  } catch {
     setBanner('Waking up server — retrying in 5 sec…');
     await new Promise(r => setTimeout(r, 5000));
     res = await doFetch();
     clearBanner();
   }
-
-  // 502/503/504 = Render gateway error during cold start. Retry once.
   if (res.status >= 502 && res.status <= 504) {
-    setBanner('Server is waking up (free hosting cold-start). Retrying in 15 sec…');
+    setBanner('Server is waking up (cold-start). Retrying in 15 sec…');
     await new Promise(r => setTimeout(r, 15000));
     res = await doFetch();
     clearBanner();
   }
-
   if (res.status === 401) {
-    // Token expired or invalid
     localStorage.removeItem('codered_admin_token'); token = '';
     showLogin();
     throw new Error('Your session expired. Please sign in again.');
   }
-  if (res.status === 403) {
-    throw new Error('Your account is not authorised as a super admin.');
-  }
+  if (res.status === 403) throw new Error('Your account is not authorised as a super admin.');
   if (!res.ok) {
     const txt = await res.text().catch(() => '');
     let msg = txt;
@@ -185,13 +244,12 @@ async function api(path, opts = {}) {
 function setBanner(text) { $('banner').innerHTML = '<div class="info">⏳ ' + text + '</div>'; }
 function clearBanner() { $('banner').innerHTML = ''; }
 
+/* ── Auth ────────────────────────────────────────────────────────────────── */
 async function login() {
   const email = $('li_email').value.trim().toLowerCase();
   const password = $('li_password').value;
   $('li_err').textContent = '';
-  if (!email || !password) {
-    $('li_err').textContent = 'Fill in all fields'; return;
-  }
+  if (!email || !password) { $('li_err').textContent = 'Fill in all fields'; return; }
   try {
     const res = await fetch(API + '/admin/login', {
       method: 'POST',
@@ -205,18 +263,16 @@ async function login() {
     const data = await res.json();
     token = data.accessToken;
     localStorage.setItem('codered_admin_token', token);
-
     me = await api('/admin/whoami');
     adminEmailsCache = [me.email.toLowerCase()];
     showDash();
-  } catch (e) {
-    $('li_err').textContent = e.message;
-  }
+  } catch (e) { $('li_err').textContent = e.message; }
 }
 
 function logout() {
   localStorage.removeItem('codered_admin_token');
   token = ''; me = null; adminEmailsCache = [];
+  stopTimers();
   showLogin();
 }
 
@@ -230,14 +286,31 @@ async function showDash() {
   $('dashView').classList.remove('hidden');
   $('me').textContent = me ? me.email : '';
   show('stats');
+  startTimers();
+  // Ask once for browser-notification permission
+  if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+  refreshEvents();
 }
 
+/* ── Auto-refresh timers ─────────────────────────────────────────────────── */
+function startTimers() {
+  stopTimers();
+  statsTimer = setInterval(() => { if ($('tab_stats') && !$('tab_stats').classList.contains('hidden')) loadStats(); }, 30000);
+  eventsTimer = setInterval(refreshEvents, 60000);
+}
+function stopTimers() {
+  if (statsTimer) clearInterval(statsTimer);
+  if (eventsTimer) clearInterval(eventsTimer);
+  statsTimer = eventsTimer = null;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
 function show(tab) {
   ['stats','orgs','users','messages','ledger'].forEach(t => {
     $('tab_'+t).classList.toggle('hidden', t !== tab);
-    document.querySelectorAll('.tab').forEach(el => {
-      el.classList.toggle('active', el.dataset.tab === tab);
-    });
+    document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
   });
   if (tab === 'stats') loadStats();
   if (tab === 'orgs') loadOrgs();
@@ -250,16 +323,83 @@ function fmtDate(d) {
   if (!d) return '—';
   return new Date(d).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' });
 }
-
+function timeAgo(d) {
+  const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+  if (s < 60) return s + 's ago';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
+}
 function healthDot(h) {
   const labels = { green: 'Healthy', yellow: 'Low credits', red: 'Out of credits', system: 'System' };
   return `<span class="health"><span class="dot ${h}"></span>${labels[h] || h}</span>`;
 }
+function healthRank(h) { return { red: 0, yellow: 1, green: 2, system: 3 }[h] ?? 4; }
+function isSuperAdmin(email) { return adminEmailsCache.includes((email || '').toLowerCase()); }
+function escape(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
 
-function isSuperAdmin(email) {
-  return adminEmailsCache.includes((email || '').toLowerCase());
+/* ── Notifications ──────────────────────────────────────────────────────── */
+async function refreshEvents() {
+  try {
+    const events = await api('/admin/events');
+    cachedEvents = events;
+
+    // Detect NEW events (not yet seen by this admin) and show desktop notifications
+    const newOnes = events.filter(e => !seenEventIds.includes(e.id));
+    if (newOnes.length > 0 && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      newOnes.slice(0, 3).forEach(e => {
+        new Notification(e.title, { body: e.detail });
+      });
+    }
+    renderBell();
+    renderNotifList();
+  } catch (e) { console.warn('events refresh failed', e.message); }
 }
 
+function renderBell() {
+  const unseen = cachedEvents.filter(e => !seenEventIds.includes(e.id)).length;
+  const b = $('bell_badge');
+  if (!b) return;
+  if (unseen > 0) { b.textContent = unseen > 99 ? '99+' : unseen; b.classList.remove('hidden'); }
+  else b.classList.add('hidden');
+}
+
+function renderNotifList() {
+  const html = cachedEvents.map(e => `
+    <div class="notif-item ${e.severity}" ${e.orgId ? `onclick="goToOrg('${e.orgId}')"` : ''}>
+      <div class="t">${escape(e.title)}</div>
+      <div class="d">${escape(e.detail)}</div>
+      <div class="when">${timeAgo(e.at)}</div>
+    </div>
+  `).join('');
+  $('notif_list').innerHTML = html || '<div class="empty">All caught up. No new events in the last 24h.</div>';
+}
+
+function toggleNotifs() {
+  const p = $('notif_panel');
+  p.classList.toggle('hidden');
+  if (!p.classList.contains('hidden')) {
+    // Opening the panel marks all currently-visible events as seen
+    seenEventIds = Array.from(new Set([...seenEventIds, ...cachedEvents.map(e => e.id)]));
+    localStorage.setItem('codered_admin_seen', JSON.stringify(seenEventIds.slice(-500)));
+    renderBell();
+  }
+}
+
+function markAllRead(ev) {
+  ev.stopPropagation();
+  seenEventIds = Array.from(new Set([...seenEventIds, ...cachedEvents.map(e => e.id)]));
+  localStorage.setItem('codered_admin_seen', JSON.stringify(seenEventIds.slice(-500)));
+  renderBell();
+}
+
+function goToOrg(orgId) {
+  $('notif_panel').classList.add('hidden');
+  show('orgs');
+  setTimeout(() => orgDetail(orgId), 100);
+}
+
+/* ── Overview ────────────────────────────────────────────────────────────── */
 async function loadStats() {
   const s = await api('/admin/stats');
   $('stats_grid').innerHTML = `
@@ -270,11 +410,22 @@ async function loadStats() {
     <div class="stat"><div class="label">SMS Failed</div><div class="value">${s.recipientsFailed}</div></div>
     <div class="stat"><div class="label">Total Credits Held</div><div class="value">${s.totalCreditsHeld.toLocaleString()}</div></div>
   `;
+  $('last_updated').textContent = 'Auto-refresh · last: ' + new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
+/* ── Orgs ───────────────────────────────────────────────────────────────── */
 async function loadOrgs() {
-  const orgs = await api('/admin/orgs');
-  const rows = orgs.map(o => `
+  cachedOrgs = await api('/admin/orgs');
+  renderOrgs();
+}
+
+function renderOrgs() {
+  const q = ($('search_orgs')?.value || '').toLowerCase();
+  const filtered = cachedOrgs
+    .filter(o => !q || o.name.toLowerCase().includes(q) || o.code.toLowerCase().includes(q))
+    .sort((a, b) => healthRank(a.health) - healthRank(b.health)); // red first
+
+  const rows = filtered.map(o => `
     <tr>
       <td>${healthDot(o.health)}</td>
       <td><b>${escape(o.name)}</b><br><span class="small">${o.code}</span></td>
@@ -292,13 +443,14 @@ async function loadOrgs() {
       </td>
     </tr>
   `).join('');
+
   $('orgs_table').innerHTML = `
     <table>
       <thead><tr>
         <th>Health</th><th>Org</th><th>Users</th><th>Contacts</th><th>Messages</th>
         <th>Credits</th><th>Created</th><th></th>
       </tr></thead>
-      <tbody>${rows || '<tr><td colspan="8" class="small">No orgs yet.</td></tr>'}</tbody>
+      <tbody>${rows || `<tr><td colspan="8" class="small">${q ? 'No matches.' : 'No orgs yet.'}</td></tr>`}</tbody>
     </table>
   `;
 }
@@ -306,34 +458,23 @@ async function loadOrgs() {
 async function renameOrg(id, currentName) {
   const next = prompt('New organization name:', currentName);
   if (!next || next.trim() === currentName) return;
-  try {
-    await api('/admin/orgs/' + id, { method: 'PATCH', body: JSON.stringify({ name: next.trim() }) });
-    loadOrgs();
-  } catch (e) { alert('Update failed: ' + e.message); }
+  try { await api('/admin/orgs/' + id, { method: 'PATCH', body: JSON.stringify({ name: next.trim() }) }); loadOrgs(); }
+  catch (e) { alert('Update failed: ' + e.message); }
 }
 
 async function confirmDeleteOrg(id, name) {
-  if (!confirm(`Delete organization "${name}"?\n\nThis permanently removes all of its users, contacts, groups, templates, messages and credit history. Cannot be undone.`)) return;
-  if (!confirm('Are you absolutely sure? Type-confirmation below.')) return;
+  if (!confirm(`Delete organization "${name}"?\n\nPermanently removes all users, contacts, groups, templates, messages and credit history. Cannot be undone.`)) return;
   const typed = prompt(`Type the org name "${name}" to confirm:`);
   if (typed !== name) { alert('Name did not match. Deletion cancelled.'); return; }
-  try {
-    await api('/admin/orgs/' + id, { method: 'DELETE' });
-    loadOrgs();
-  } catch (e) { alert('Delete failed: ' + e.message); }
+  try { await api('/admin/orgs/' + id, { method: 'DELETE' }); loadOrgs(); }
+  catch (e) { alert('Delete failed: ' + e.message); }
 }
 
 async function orgDetail(id) {
   const d = await api('/admin/orgs/' + id);
-  const usersHtml = d.org.users.map(m => `
-    <tr><td>${escape(m.user.email)}</td><td>${escape(m.user.displayName || '')}</td><td><span class="badge">${m.role}</span></td></tr>
-  `).join('') || '<tr><td colspan="3" class="small">No members.</td></tr>';
-  const ledgerHtml = d.ledger.map(l => `
-    <tr><td>${fmtDate(l.createdAt)}</td><td><span class="badge ${l.type}">${l.type}</span></td><td>${l.amount}</td><td>${escape(l.reason)}</td></tr>
-  `).join('') || '<tr><td colspan="4" class="small">No ledger entries.</td></tr>';
-  const msgHtml = d.recentMessages.map(m => `
-    <tr><td>${escape(m.title)}</td><td><span class="badge ${m.status}">${m.status}</span></td><td>${m._count.recipients}</td><td>${fmtDate(m.createdAt)}</td></tr>
-  `).join('') || '<tr><td colspan="4" class="small">No messages.</td></tr>';
+  const usersHtml = d.org.users.map(m => `<tr><td>${escape(m.user.email)}</td><td>${escape(m.user.displayName || '')}</td><td><span class="badge">${m.role}</span></td></tr>`).join('') || '<tr><td colspan="3" class="small">No members.</td></tr>';
+  const ledgerHtml = d.ledger.map(l => `<tr><td>${fmtDate(l.createdAt)}</td><td><span class="badge ${l.type}">${l.type}</span></td><td>${l.amount}</td><td>${escape(l.reason)}</td></tr>`).join('') || '<tr><td colspan="4" class="small">No ledger entries.</td></tr>';
+  const msgHtml = d.recentMessages.map(m => `<tr><td>${escape(m.title)}</td><td><span class="badge ${m.status}">${m.status}</span></td><td>${m._count.recipients}</td><td>${fmtDate(m.createdAt)}</td></tr>`).join('') || '<tr><td colspan="4" class="small">No messages.</td></tr>';
 
   $('orgs_table').innerHTML = `
     <button class="btn btn-small btn-light" style="margin-bottom:16px" onclick="loadOrgs()">← Back to all orgs</button>
@@ -342,7 +483,7 @@ async function orgDetail(id) {
 
     <div class="form">
       <h3 style="margin-bottom:8px">Adjust Credits</h3>
-      <p class="small" style="margin-bottom:12px">Use a positive number to grant credits, negative to deduct.</p>
+      <p class="small" style="margin-bottom:12px">Positive number grants credits, negative deducts.</p>
       <div class="row">
         <input type="number" id="adj_amount" placeholder="e.g. 100">
         <input id="adj_reason" placeholder="Reason (required)" style="flex:1">
@@ -355,12 +496,10 @@ async function orgDetail(id) {
       <summary>Members (${d.org.users.length})</summary>
       <table><thead><tr><th>Email</th><th>Name</th><th>Role</th></tr></thead><tbody>${usersHtml}</tbody></table>
     </details>
-
     <details style="margin-top:16px">
       <summary>Recent Messages (${d.recentMessages.length})</summary>
       <table><thead><tr><th>Title</th><th>Status</th><th>Recipients</th><th>When</th></tr></thead><tbody>${msgHtml}</tbody></table>
     </details>
-
     <details style="margin-top:16px">
       <summary>Credits Ledger (${d.ledger.length})</summary>
       <table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Reason</th></tr></thead><tbody>${ledgerHtml}</tbody></table>
@@ -372,23 +511,26 @@ async function adjustCredits(orgId) {
   const amount = parseInt($('adj_amount').value, 10);
   const reason = $('adj_reason').value.trim();
   $('adj_msg').innerHTML = '';
-  if (!amount || !reason) { $('adj_msg').innerHTML = '<div class="err">Amount and reason are required.</div>'; return; }
+  if (!amount || !reason) { $('adj_msg').innerHTML = '<div class="err">Amount and reason required.</div>'; return; }
   if (!confirm(`Adjust credits by ${amount}?\n\nReason: ${reason}`)) return;
   try {
-    const res = await api('/admin/orgs/' + orgId + '/credits', {
-      method: 'POST',
-      body: JSON.stringify({ amount, reason }),
-    });
+    const res = await api('/admin/orgs/' + orgId + '/credits', { method: 'POST', body: JSON.stringify({ amount, reason }) });
     $('adj_msg').innerHTML = `<div class="ok">Updated. New balance: ${res.newCredits}</div>`;
     setTimeout(() => orgDetail(orgId), 800);
-  } catch (e) {
-    $('adj_msg').innerHTML = '<div class="err">' + escape(e.message) + '</div>';
-  }
+  } catch (e) { $('adj_msg').innerHTML = '<div class="err">' + escape(e.message) + '</div>'; }
 }
 
+/* ── Users ──────────────────────────────────────────────────────────────── */
 async function loadUsers() {
-  const users = await api('/admin/users');
-  const rows = users.map(u => {
+  cachedUsers = await api('/admin/users');
+  renderUsers();
+}
+function renderUsers() {
+  const q = ($('search_users')?.value || '').toLowerCase();
+  const filtered = cachedUsers.filter(u =>
+    !q || (u.email || '').toLowerCase().includes(q) || (u.displayName || '').toLowerCase().includes(q)
+  );
+  const rows = filtered.map(u => {
     const protectedRow = isSuperAdmin(u.email);
     return `
       <tr>
@@ -401,15 +543,13 @@ async function loadUsers() {
             ${!protectedRow ? `<button class="btn btn-small btn-danger" onclick="confirmDeleteUser('${u.id}', '${escape(u.email).replace(/'/g, '&#39;')}')">Delete</button>` : ''}
           </div>
         </td>
-      </tr>
-    `;
+      </tr>`;
   }).join('');
   $('users_table').innerHTML = `
     <table>
       <thead><tr><th>User</th><th>Orgs</th><th>Created</th><th></th></tr></thead>
-      <tbody>${rows || '<tr><td colspan="4" class="small">No users yet.</td></tr>'}</tbody>
-    </table>
-  `;
+      <tbody>${rows || `<tr><td colspan="4" class="small">${q ? 'No matches.' : 'No users yet.'}</td></tr>`}</tbody>
+    </table>`;
 }
 
 async function editUser(id, currentEmail, currentName) {
@@ -417,26 +557,27 @@ async function editUser(id, currentEmail, currentName) {
   if (nextName === null) return;
   const nextEmail = prompt('Email:', currentEmail);
   if (nextEmail === null) return;
-  try {
-    await api('/admin/users/' + id, {
-      method: 'PATCH',
-      body: JSON.stringify({ displayName: nextName, email: nextEmail }),
-    });
-    loadUsers();
-  } catch (e) { alert('Update failed: ' + e.message); }
+  try { await api('/admin/users/' + id, { method: 'PATCH', body: JSON.stringify({ displayName: nextName, email: nextEmail }) }); loadUsers(); }
+  catch (e) { alert('Update failed: ' + e.message); }
 }
 
 async function confirmDeleteUser(id, email) {
-  if (!confirm(`Delete user "${email}"?\n\nThis removes them from all orgs and deletes their device sessions. Cannot be undone.`)) return;
-  try {
-    await api('/admin/users/' + id, { method: 'DELETE' });
-    loadUsers();
-  } catch (e) { alert('Delete failed: ' + e.message); }
+  if (!confirm(`Delete user "${email}"?\n\nRemoves them from all orgs and deletes their device sessions. Cannot be undone.`)) return;
+  try { await api('/admin/users/' + id, { method: 'DELETE' }); loadUsers(); }
+  catch (e) { alert('Delete failed: ' + e.message); }
 }
 
+/* ── Messages ───────────────────────────────────────────────────────────── */
 async function loadMessages() {
-  const msgs = await api('/admin/messages');
-  const rows = msgs.map(m => `
+  cachedMessages = await api('/admin/messages');
+  renderMessages();
+}
+function renderMessages() {
+  const q = ($('search_messages')?.value || '').toLowerCase();
+  const filtered = cachedMessages.filter(m =>
+    !q || (m.title || '').toLowerCase().includes(q) || (m.org?.name || '').toLowerCase().includes(q) || (m.org?.code || '').toLowerCase().includes(q)
+  );
+  const rows = filtered.map(m => `
     <tr>
       <td><b>${escape(m.title)}</b></td>
       <td>${escape(m.org.name)} <span class="small">(${m.org.code})</span></td>
@@ -444,40 +585,71 @@ async function loadMessages() {
       <td>${m._count.recipients}</td>
       <td>${fmtDate(m.createdAt)}</td>
       <td>${m.scheduledAt ? fmtDate(m.scheduledAt) : '—'}</td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
   $('messages_table').innerHTML = `
     <table>
       <thead><tr><th>Title</th><th>Org</th><th>Status</th><th>Recipients</th><th>Created</th><th>Scheduled</th></tr></thead>
-      <tbody>${rows || '<tr><td colspan="6" class="small">No messages yet.</td></tr>'}</tbody>
-    </table>
-  `;
+      <tbody>${rows || `<tr><td colspan="6" class="small">${q ? 'No matches.' : 'No messages yet.'}</td></tr>`}</tbody>
+    </table>`;
 }
 
+/* ── Ledger ─────────────────────────────────────────────────────────────── */
 async function loadLedger() {
-  const entries = await api('/admin/ledger');
-  const rows = entries.map(l => `
+  cachedLedger = await api('/admin/ledger');
+  renderLedger();
+}
+function renderLedger() {
+  const q = ($('search_ledger')?.value || '').toLowerCase();
+  const filtered = cachedLedger.filter(l =>
+    !q || (l.reason || '').toLowerCase().includes(q) || (l.org?.name || '').toLowerCase().includes(q) || (l.org?.code || '').toLowerCase().includes(q)
+  );
+  const rows = filtered.map(l => `
     <tr>
       <td>${fmtDate(l.createdAt)}</td>
       <td>${escape(l.org.name)} <span class="small">(${l.org.code})</span></td>
       <td><span class="badge ${l.type}">${l.type}</span></td>
       <td>${l.amount}</td>
       <td>${escape(l.reason)}</td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
   $('ledger_table').innerHTML = `
     <table>
       <thead><tr><th>Date</th><th>Org</th><th>Type</th><th>Amount</th><th>Reason</th></tr></thead>
-      <tbody>${rows || '<tr><td colspan="5" class="small">No entries yet.</td></tr>'}</tbody>
-    </table>
-  `;
+      <tbody>${rows || `<tr><td colspan="5" class="small">${q ? 'No matches.' : 'No entries yet.'}</td></tr>`}</tbody>
+    </table>`;
 }
 
-function escape(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+/* ── CSV export ─────────────────────────────────────────────────────────── */
+function exportCsv(tab) {
+  let rows = [], filename = tab;
+  if (tab === 'orgs') {
+    rows = [['Name', 'Code', 'Health', 'Users', 'Contacts', 'Messages', 'Credits', 'Created']]
+      .concat(cachedOrgs.map(o => [o.name, o.code, o.health, o._count.users, o._count.contacts, o._count.messages, o.credits, o.createdAt]));
+  } else if (tab === 'users') {
+    rows = [['Email', 'Display Name', 'Orgs', 'Created']]
+      .concat(cachedUsers.map(u => [u.email, u.displayName, u.memberships.map(m => `${m.org.code}:${m.role}`).join('; '), u.createdAt]));
+  } else if (tab === 'messages') {
+    rows = [['Title', 'Org', 'Status', 'Recipients', 'Created', 'Scheduled']]
+      .concat(cachedMessages.map(m => [m.title, `${m.org.code} - ${m.org.name}`, m.status, m._count.recipients, m.createdAt, m.scheduledAt || '']));
+  } else if (tab === 'ledger') {
+    rows = [['Date', 'Org', 'Type', 'Amount', 'Reason']]
+      .concat(cachedLedger.map(l => [l.createdAt, `${l.org.code} - ${l.org.name}`, l.type, l.amount, l.reason]));
+  }
+  const csv = rows.map(r => r.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `codered-${filename}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
 }
 
-// Bootstrap
+/* ── Close notif panel on outside click ─────────────────────────────────── */
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.bell-wrap')) {
+    $('notif_panel')?.classList.add('hidden');
+  }
+});
+
+/* ── Bootstrap ──────────────────────────────────────────────────────────── */
 (async () => {
   if (token) {
     try {

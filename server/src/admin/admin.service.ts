@@ -52,6 +52,106 @@ export class AdminService {
     return { accessToken, email: user.email };
   }
 
+  /**
+   * Aggregates recent events the admin should know about:
+   *   - New orgs registered (last 24h)
+   *   - Stripe payments received (last 24h)
+   *   - Message failures (last 24h)
+   *   - Orgs currently red/yellow (low/no credits)
+   * Returned sorted newest-first. The admin UI polls this for its bell icon.
+   */
+  async events() {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const [newOrgs, payments, failedMsgs, lowCreditOrgs] = await Promise.all([
+      this.prisma.organization.findMany({
+        where: { createdAt: { gte: since } },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, name: true, code: true, createdAt: true },
+      }),
+      this.prisma.creditsLedger.findMany({
+        where: {
+          createdAt: { gte: since },
+          type: 'credit',
+          reason: { contains: 'Stripe' },
+        },
+        orderBy: { createdAt: 'desc' },
+        include: { org: { select: { name: true, code: true } } },
+      }),
+      this.prisma.message.findMany({
+        where: { createdAt: { gte: since }, status: 'failed' },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: {
+          id: true, title: true, createdAt: true,
+          org: { select: { name: true, code: true } },
+        },
+      }),
+      this.prisma.organization.findMany({
+        where: { credits: { lt: 20 }, code: { not: 'SYSADMIN' } },
+        select: { id: true, name: true, code: true, credits: true },
+      }),
+    ]);
+
+    type Event = {
+      id: string;
+      type: 'new_org' | 'payment' | 'message_failed' | 'low_credits';
+      severity: 'info' | 'success' | 'warning' | 'danger';
+      title: string;
+      detail: string;
+      at: Date | string;
+      orgId?: string;
+    };
+
+    const events: Event[] = [];
+
+    for (const o of newOrgs) {
+      events.push({
+        id: `org_${o.id}`,
+        type: 'new_org',
+        severity: 'info',
+        title: `New organisation: ${o.name}`,
+        detail: `Code: ${o.code}`,
+        at: o.createdAt,
+        orgId: o.id,
+      });
+    }
+    for (const p of payments) {
+      events.push({
+        id: `pay_${p.id}`,
+        type: 'payment',
+        severity: 'success',
+        title: `Payment received: ${p.amount} credits`,
+        detail: `${p.org.name} (${p.org.code})`,
+        at: p.createdAt,
+      });
+    }
+    for (const m of failedMsgs) {
+      events.push({
+        id: `msg_${m.id}`,
+        type: 'message_failed',
+        severity: 'danger',
+        title: `Message failed: ${m.title}`,
+        detail: `${m.org.name} (${m.org.code})`,
+        at: m.createdAt,
+      });
+    }
+    for (const o of lowCreditOrgs) {
+      events.push({
+        id: `low_${o.id}`,
+        type: 'low_credits',
+        severity: o.credits <= 0 ? 'danger' : 'warning',
+        title: o.credits <= 0 ? `Out of credits: ${o.name}` : `Low credits: ${o.name}`,
+        detail: `${o.credits} credits remaining · ${o.code}`,
+        at: new Date(),
+        orgId: o.id,
+      });
+    }
+
+    events.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+    return events;
+  }
+
   async stats() {
     const [orgs, users, totalCreditsAgg, messages, recipientsSent, recipientsFailed] =
       await Promise.all([

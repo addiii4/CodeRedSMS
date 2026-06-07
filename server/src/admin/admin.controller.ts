@@ -29,6 +29,12 @@ export class AdminController {
   }
 
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Get('events')
+  events() {
+    return this.admin.events();
+  }
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @Get('orgs')
   listOrgs() {
     return this.admin.listOrgs();
