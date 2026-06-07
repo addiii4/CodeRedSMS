@@ -496,6 +496,17 @@ async function orgDetail(id) {
       <summary>Members (${d.org.users.length})</summary>
       <table><thead><tr><th>Email</th><th>Name</th><th>Role</th></tr></thead><tbody>${usersHtml}</tbody></table>
     </details>
+
+    <details style="margin-top:16px" onclick="if(this.open) loadOrgTemplates('${id}')">
+      <summary>Templates <span class="small">(click to manage)</span></summary>
+      <div id="org_templates_${id}"><p class="small" style="padding:8px">Loading…</p></div>
+    </details>
+
+    <details style="margin-top:16px" onclick="if(this.open) loadOrgContacts('${id}')">
+      <summary>Contacts <span class="small">(click to manage)</span></summary>
+      <div id="org_contacts_${id}"><p class="small" style="padding:8px">Loading…</p></div>
+    </details>
+
     <details style="margin-top:16px">
       <summary>Recent Messages (${d.recentMessages.length})</summary>
       <table><thead><tr><th>Title</th><th>Status</th><th>Recipients</th><th>When</th></tr></thead><tbody>${msgHtml}</tbody></table>
@@ -505,6 +516,134 @@ async function orgDetail(id) {
       <table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Reason</th></tr></thead><tbody>${ledgerHtml}</tbody></table>
     </details>
   `;
+}
+
+/* ── Org templates management ─────────────────────────────────────────── */
+async function loadOrgTemplates(orgId) {
+  const container = $('org_templates_' + orgId);
+  if (!container) return;
+  try {
+    const templates = await api('/admin/orgs/' + orgId + '/templates');
+    const rows = templates.map(t => `
+      <tr>
+        <td style="max-width:200px"><b>${escape(t.title)}</b></td>
+        <td style="max-width:400px"><span class="small">${escape(t.body).slice(0, 120)}${t.body.length > 120 ? '…' : ''}</span></td>
+        <td>${fmtDate(t.createdAt)}</td>
+        <td>
+          <div class="actions">
+            <button class="btn btn-small btn-light" onclick="editTemplate('${orgId}', '${t.id}', '${escape(t.title).replace(/'/g, '&#39;')}', \`${escape(t.body).replace(/`/g, '\\\\`')}\`)">Edit</button>
+            <button class="btn btn-small btn-danger" onclick="deleteTemplate('${orgId}', '${t.id}', '${escape(t.title).replace(/'/g, '&#39;')}')">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+    container.innerHTML = `
+      <div class="form" style="margin-bottom:12px">
+        <h4 style="margin-bottom:8px">Add Template</h4>
+        <input id="tpl_title_${orgId}" placeholder="Title" style="width:100%;padding:8px;border:1px solid #d1d1d6;border-radius:6px;margin-bottom:6px;font-size:13px">
+        <textarea id="tpl_body_${orgId}" placeholder="Message body" rows="3" style="width:100%;padding:8px;border:1px solid #d1d1d6;border-radius:6px;margin-bottom:6px;font-size:13px;font-family:inherit"></textarea>
+        <button class="btn btn-small" onclick="createTemplate('${orgId}')">Add Template</button>
+      </div>
+      <table>
+        <thead><tr><th>Title</th><th>Body</th><th>Created</th><th></th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="4" class="small">No templates.</td></tr>'}</tbody>
+      </table>
+    `;
+  } catch (e) {
+    container.innerHTML = '<div class="err">' + escape(e.message) + '</div>';
+  }
+}
+
+async function createTemplate(orgId) {
+  const title = $('tpl_title_' + orgId).value.trim();
+  const body = $('tpl_body_' + orgId).value.trim();
+  if (!title || !body) { alert('Title and body required'); return; }
+  try {
+    await api('/admin/orgs/' + orgId + '/templates', { method: 'POST', body: JSON.stringify({ title, body }) });
+    loadOrgTemplates(orgId);
+  } catch (e) { alert('Create failed: ' + e.message); }
+}
+
+async function editTemplate(orgId, id, currentTitle, currentBody) {
+  const nextTitle = prompt('Title:', currentTitle);
+  if (nextTitle === null) return;
+  const nextBody = prompt('Body:', currentBody);
+  if (nextBody === null) return;
+  try {
+    await api('/admin/templates/' + id, { method: 'PATCH', body: JSON.stringify({ title: nextTitle, body: nextBody }) });
+    loadOrgTemplates(orgId);
+  } catch (e) { alert('Update failed: ' + e.message); }
+}
+
+async function deleteTemplate(orgId, id, title) {
+  if (!confirm(`Delete template "${title}"?`)) return;
+  try { await api('/admin/templates/' + id, { method: 'DELETE' }); loadOrgTemplates(orgId); }
+  catch (e) { alert('Delete failed: ' + e.message); }
+}
+
+/* ── Org contacts management ──────────────────────────────────────────── */
+async function loadOrgContacts(orgId) {
+  const container = $('org_contacts_' + orgId);
+  if (!container) return;
+  try {
+    const contacts = await api('/admin/orgs/' + orgId + '/contacts');
+    const rows = contacts.map(c => `
+      <tr>
+        <td><b>${escape(c.fullName)}</b></td>
+        <td><code>${escape(c.phoneE164)}</code></td>
+        <td>${fmtDate(c.createdAt)}</td>
+        <td>
+          <div class="actions">
+            <button class="btn btn-small btn-light" onclick="editContact('${orgId}', '${c.id}', '${escape(c.fullName).replace(/'/g, '&#39;')}', '${escape(c.phoneE164).replace(/'/g, '&#39;')}')">Edit</button>
+            <button class="btn btn-small btn-danger" onclick="deleteContact('${orgId}', '${c.id}', '${escape(c.fullName).replace(/'/g, '&#39;')}')">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+    container.innerHTML = `
+      <div class="form" style="margin-bottom:12px">
+        <h4 style="margin-bottom:8px">Add Contact</h4>
+        <div class="row">
+          <input id="ctc_name_${orgId}" placeholder="Full Name" style="flex:1;padding:8px;border:1px solid #d1d1d6;border-radius:6px;font-size:13px">
+          <input id="ctc_phone_${orgId}" placeholder="+61400000000" style="flex:1;padding:8px;border:1px solid #d1d1d6;border-radius:6px;font-size:13px">
+          <button class="btn btn-small" onclick="createContact('${orgId}')">Add Contact</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Name</th><th>Phone</th><th>Added</th><th></th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="4" class="small">No contacts.</td></tr>'}</tbody>
+      </table>
+    `;
+  } catch (e) {
+    container.innerHTML = '<div class="err">' + escape(e.message) + '</div>';
+  }
+}
+
+async function createContact(orgId) {
+  const fullName = $('ctc_name_' + orgId).value.trim();
+  const phoneE164 = $('ctc_phone_' + orgId).value.trim();
+  if (!fullName || !phoneE164) { alert('Name and phone required'); return; }
+  try {
+    await api('/admin/orgs/' + orgId + '/contacts', { method: 'POST', body: JSON.stringify({ fullName, phoneE164 }) });
+    loadOrgContacts(orgId);
+  } catch (e) { alert('Create failed: ' + e.message); }
+}
+
+async function editContact(orgId, id, currentName, currentPhone) {
+  const nextName = prompt('Full name:', currentName);
+  if (nextName === null) return;
+  const nextPhone = prompt('Phone (E.164 format, e.g. +61400000000):', currentPhone);
+  if (nextPhone === null) return;
+  try {
+    await api('/admin/contacts/' + id, { method: 'PATCH', body: JSON.stringify({ fullName: nextName, phoneE164: nextPhone }) });
+    loadOrgContacts(orgId);
+  } catch (e) { alert('Update failed: ' + e.message); }
+}
+
+async function deleteContact(orgId, id, name) {
+  if (!confirm(`Delete contact "${name}"?`)) return;
+  try { await api('/admin/contacts/' + id, { method: 'DELETE' }); loadOrgContacts(orgId); }
+  catch (e) { alert('Delete failed: ' + e.message); }
 }
 
 async function adjustCredits(orgId) {

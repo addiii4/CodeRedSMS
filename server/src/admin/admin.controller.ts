@@ -99,4 +99,56 @@ export class AdminController {
   deleteUser(@CurrentUser() user: ReqUser, @Param('id') id: string) {
     return this.admin.deleteUser(id, user.email ?? 'unknown');
   }
+
+  // ── Org templates ───────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Get('orgs/:id/templates')
+  listOrgTemplates(@Param('id') id: string) {
+    return this.admin.listTemplates(id);
+  }
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Post('orgs/:id/templates')
+  createOrgTemplate(@Param('id') id: string, @Body() body: { title: string; body: string }) {
+    return this.admin.createTemplate(id, body.title, body.body);
+  }
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Patch('templates/:id')
+  updateTemplate(@Param('id') id: string, @Body() body: { title?: string; body?: string }) {
+    return this.admin.updateTemplate(id, body);
+  }
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Delete('templates/:id')
+  deleteTemplate(@Param('id') id: string) {
+    return this.admin.deleteTemplate(id);
+  }
+
+  // ── Org contacts ────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Get('orgs/:id/contacts')
+  listOrgContacts(@Param('id') id: string) {
+    return this.admin.listContacts(id);
+  }
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Post('orgs/:id/contacts')
+  createOrgContact(@Param('id') id: string, @Body() body: { fullName: string; phoneE164: string }) {
+    return this.admin.createContact(id, body.fullName, body.phoneE164);
+  }
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Patch('contacts/:id')
+  updateContact(@Param('id') id: string, @Body() body: { fullName?: string; phoneE164?: string }) {
+    return this.admin.updateContact(id, body);
+  }
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Delete('contacts/:id')
+  deleteContact(@Param('id') id: string) {
+    return this.admin.deleteContact(id);
+  }
 }

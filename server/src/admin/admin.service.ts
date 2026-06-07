@@ -237,6 +237,84 @@ export class AdminService {
     return this.prisma.user.update({ where: { id: userId }, data: updates });
   }
 
+  // ── Templates (CRUD on behalf of an org) ───────────────────────────────
+
+  async listTemplates(orgId: string) {
+    const org = await this.prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) throw new BadRequestException('Org not found');
+    return this.prisma.template.findMany({
+      where: { orgId },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async createTemplate(orgId: string, title: string, body: string) {
+    if (!title?.trim() || !body?.trim()) throw new BadRequestException('Title and body required');
+    const org = await this.prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) throw new BadRequestException('Org not found');
+    return this.prisma.template.create({
+      data: { orgId, title: title.trim(), body: body.trim() },
+    });
+  }
+
+  async updateTemplate(templateId: string, data: { title?: string; body?: string }) {
+    const t = await this.prisma.template.findUnique({ where: { id: templateId } });
+    if (!t) throw new BadRequestException('Template not found');
+    const updates: { title?: string; body?: string } = {};
+    if (data.title?.trim()) updates.title = data.title.trim();
+    if (data.body?.trim()) updates.body = data.body.trim();
+    if (Object.keys(updates).length === 0) return t;
+    return this.prisma.template.update({ where: { id: templateId }, data: updates });
+  }
+
+  async deleteTemplate(templateId: string) {
+    const t = await this.prisma.template.findUnique({ where: { id: templateId } });
+    if (!t) throw new BadRequestException('Template not found');
+    await this.prisma.template.delete({ where: { id: templateId } });
+    return { ok: true };
+  }
+
+  // ── Contacts (CRUD on behalf of an org) ────────────────────────────────
+
+  async listContacts(orgId: string) {
+    const org = await this.prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) throw new BadRequestException('Org not found');
+    return this.prisma.contact.findMany({
+      where: { orgId },
+      orderBy: { fullName: 'asc' },
+    });
+  }
+
+  async createContact(orgId: string, fullName: string, phoneE164: string) {
+    if (!fullName?.trim() || !phoneE164?.trim()) {
+      throw new BadRequestException('fullName and phoneE164 required');
+    }
+    const org = await this.prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) throw new BadRequestException('Org not found');
+    return this.prisma.contact.create({
+      data: { orgId, fullName: fullName.trim(), phoneE164: phoneE164.trim() },
+    });
+  }
+
+  async updateContact(contactId: string, data: { fullName?: string; phoneE164?: string }) {
+    const c = await this.prisma.contact.findUnique({ where: { id: contactId } });
+    if (!c) throw new BadRequestException('Contact not found');
+    const updates: { fullName?: string; phoneE164?: string } = {};
+    if (data.fullName?.trim()) updates.fullName = data.fullName.trim();
+    if (data.phoneE164?.trim()) updates.phoneE164 = data.phoneE164.trim();
+    if (Object.keys(updates).length === 0) return c;
+    return this.prisma.contact.update({ where: { id: contactId }, data: updates });
+  }
+
+  async deleteContact(contactId: string) {
+    const c = await this.prisma.contact.findUnique({ where: { id: contactId } });
+    if (!c) throw new BadRequestException('Contact not found');
+    await this.prisma.contact.delete({ where: { id: contactId } });
+    return { ok: true };
+  }
+
+  // ── Users ───────────────────────────────────────────────────────────────
+
   async deleteUser(userId: string, actorEmail: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new BadRequestException('User not found');
