@@ -4,12 +4,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#D32F2F',         // Code Red brand red
-        'primary-hover': '#B71C1C',
-        ink: '#1c1c1e',
+        // Match mobile/src/constants/color.ts exactly
+        primary: '#B00020',
+        'primary-hover': '#8C0019',
+        ink: '#121212',
         muted: '#8e8e93',
-        line: '#e5e5ea',
-        bg: '#f5f5f7',
+        line: '#D6D6D6',
+        bg: '#FAFAFA',
       },
       fontFamily: {
         sans: [

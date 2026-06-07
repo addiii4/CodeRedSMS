@@ -42,7 +42,7 @@ export default function Signup() {
     <div className="min-h-screen grid place-items-center bg-bg px-4 py-8">
       <div className="w-full max-w-md bg-white rounded-2xl border border-line shadow-sm p-8">
         <div className="flex items-center gap-2 mb-6">
-          <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center font-bold text-white">CR</div>
+          <img src="/logo.png" alt="Code Red SMS" className="w-10 h-10 object-contain" />
           <h1 className="text-lg font-semibold">Code Red SMS</h1>
         </div>
 

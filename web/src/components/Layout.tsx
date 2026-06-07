@@ -32,9 +32,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <aside className="w-64 bg-ink text-white flex flex-col">
         <div className="p-5 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center font-bold text-sm">
-              CR
-            </div>
+            <img src="/logo.png" alt="Code Red SMS" className="w-8 h-8 object-contain" />
             <div>
               <div className="font-semibold text-sm">Code Red SMS</div>
               {org && <div className="text-xs opacity-70">{org.name}</div>}
