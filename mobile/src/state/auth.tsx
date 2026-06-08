@@ -2,65 +2,67 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import * as SecureStore from 'expo-secure-store';
 import { api, setAccessToken, setAuthFailureHandler } from '../lib/api';
 import { navigationRef } from '../lib/navigationRef';
-import 'react-native-get-random-values';
-import { Platform } from 'react-native';
-import { v4 as uuid } from 'uuid';
 
 type User = { id: string; email: string; displayName: string };
-type Org  = { id: string; code: string; name: string; credits: number };
-type AuthPayload = { accessToken: string; user: User; org: Org };
+type Org  = { id: string; code: string; name: string; status: 'pending' | 'active' | 'suspended'; credits?: number };
+type Membership = {
+  id: string;
+  role: 'admin' | 'editor' | 'viewer';
+  status: 'pending' | 'active' | 'suspended' | 'rejected';
+  org: Org;
+};
+type AuthPayload = { accessToken: string; user: User };
+type MeResponse  = { user: User; memberships: Membership[] };
+
+type RegisterArgs =
+  | { mode: 'join';   email: string; password: string; displayName?: string; buildingCode: string }
+  | { mode: 'create'; email: string; password: string; displayName?: string; buildingCode: string; orgName: string };
 
 type AuthContextType = {
     ready: boolean;
     user: User | null;
-    org: Org | null;
-    deviceId: string | null;
-    register: (p: { buildingCode: string; email: string; password: string; displayName?: string }) => Promise<void>;
-    login: (p: { buildingCode: string; email: string; password: string }) => Promise<void>;
-    deviceLogin: (p: { buildingCode: string }) => Promise<void>;
+    memberships: Membership[];
+    activeMembership: Membership | null;
+    register: (args: RegisterArgs) => Promise<void>;
+    login: (p: { email: string; password: string }) => Promise<void>;
+    refreshMe: () => Promise<void>;
     logout: () => Promise<void>;
 };
 
 const AuthCtx = createContext<AuthContextType>(null as any);
 
-const DEVICE_ID_KEY = 'codered_device_id';
-const TOKEN_KEY     = 'codered_access_token';
-const USER_KEY      = 'codered_user';
-const ORG_KEY       = 'codered_org';
+const TOKEN_KEY = 'codered_access_token';
+const USER_KEY  = 'codered_user';
+const MEM_KEY   = 'codered_memberships';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [ready, setReady]     = useState(false);
-    const [user, setUser]       = useState<User | null>(null);
-    const [org, setOrg]         = useState<Org | null>(null);
-    const [deviceId, setDeviceId] = useState<string | null>(null);
-
-    // ─── Session helpers ───────────────────────────────────────────────────────
+    const [ready, setReady]             = useState(false);
+    const [user, setUser]               = useState<User | null>(null);
+    const [memberships, setMemberships] = useState<Membership[]>([]);
 
     const clearSession = async () => {
         setUser(null);
-        setOrg(null);
+        setMemberships([]);
         setAccessToken(null);
         await SecureStore.deleteItemAsync(TOKEN_KEY);
         await SecureStore.deleteItemAsync(USER_KEY);
-        await SecureStore.deleteItemAsync(ORG_KEY);
+        await SecureStore.deleteItemAsync(MEM_KEY);
     };
 
-    const saveSession = async (p: AuthPayload) => {
-        setAccessToken(p.accessToken);
-        await SecureStore.setItemAsync(TOKEN_KEY, p.accessToken);
-        await SecureStore.setItemAsync(USER_KEY, JSON.stringify(p.user));
-        await SecureStore.setItemAsync(ORG_KEY, JSON.stringify(p.org));
-        setUser(p.user);
-        setOrg(p.org);
+    const persistMe = async (me: MeResponse) => {
+        setUser(me.user);
+        setMemberships(me.memberships);
+        await SecureStore.setItemAsync(USER_KEY, JSON.stringify(me.user));
+        await SecureStore.setItemAsync(MEM_KEY, JSON.stringify(me.memberships));
     };
 
-    // ─── Startup: restore session + register 401 handler ──────────────────────
+    const refreshMe = async () => {
+        const me = await api.get<MeResponse>('/auth/me');
+        await persistMe(me);
+    };
 
     useEffect(() => {
-        // Register global 401 handler — fires when any API call gets Unauthorized.
-        // This catches expired tokens mid-session and boots the user back to Login.
         setAuthFailureHandler(async () => {
-            console.warn('[Auth] 401 received — clearing session and redirecting to Login');
             await clearSession();
             if (navigationRef.isReady()) {
                 navigationRef.reset({ index: 0, routes: [{ name: 'Login' }] });
@@ -68,95 +70,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         (async () => {
-            // Restore / generate device ID
-            let d = await SecureStore.getItemAsync(DEVICE_ID_KEY);
-            if (!d) {
-                d = uuid();
-                await SecureStore.setItemAsync(DEVICE_ID_KEY, d);
-            }
-            setDeviceId(d);
-
-            // Restore persisted session
-            const token    = await SecureStore.getItemAsync(TOKEN_KEY);
-            const userJson = await SecureStore.getItemAsync(USER_KEY);
-            const orgJson  = await SecureStore.getItemAsync(ORG_KEY);
-
-            if (token && userJson && orgJson) {
+            const token   = await SecureStore.getItemAsync(TOKEN_KEY);
+            const userStr = await SecureStore.getItemAsync(USER_KEY);
+            const memStr  = await SecureStore.getItemAsync(MEM_KEY);
+            if (token && userStr) {
                 setAccessToken(token);
                 try {
-                    setUser(JSON.parse(userJson));
-                    setOrg(JSON.parse(orgJson));
-                } catch {
-                    // Corrupt stored data — wipe it so the user can log in cleanly
-                    await SecureStore.deleteItemAsync(TOKEN_KEY);
-                    await SecureStore.deleteItemAsync(USER_KEY);
-                    await SecureStore.deleteItemAsync(ORG_KEY);
-                }
+                    setUser(JSON.parse(userStr));
+                    if (memStr) setMemberships(JSON.parse(memStr));
+                } catch { await clearSession(); }
+                refreshMe().catch(() => {});
             }
-
             setReady(true);
         })();
 
-        return () => {
-            setAuthFailureHandler(null);
-        };
+        return () => setAuthFailureHandler(null);
     }, []);
 
-    // ─── Auth actions ──────────────────────────────────────────────────────────
-
-    const register = async ({
-        buildingCode,
-        email,
-        password,
-        displayName,
-    }: {
-        buildingCode: string;
-        email: string;
-        password: string;
-        displayName?: string;
-    }) => {
-        if (!deviceId) throw new Error('Device not ready');
-        const data = await api.post<AuthPayload>('/auth/register', {
-            buildingCode, email, password, deviceId, platform: Platform.OS, displayName,
-        });
-        await saveSession(data);
+    const register: AuthContextType['register'] = async (args) => {
+        const data = await api.post<AuthPayload>('/auth/register', args);
+        setAccessToken(data.accessToken);
+        await SecureStore.setItemAsync(TOKEN_KEY, data.accessToken);
+        await refreshMe();
     };
 
-    /** Email + password login — also registers this device so future quick-logins work. */
-    const login = async ({
-        buildingCode,
-        email,
-        password,
-    }: {
-        buildingCode: string;
-        email: string;
-        password: string;
-    }) => {
-        if (!deviceId) throw new Error('Device not ready');
-        const data = await api.post<AuthPayload>('/auth/login', {
-            buildingCode, email, password, deviceId, platform: Platform.OS,
-        });
-        await saveSession(data);
+    const login: AuthContextType['login'] = async ({ email, password }) => {
+        const data = await api.post<AuthPayload>('/auth/login', { email, password });
+        setAccessToken(data.accessToken);
+        await SecureStore.setItemAsync(TOKEN_KEY, data.accessToken);
+        await refreshMe();
     };
 
-    /** Quick login using device ID only. Works after the device has been registered via login(). */
-    const deviceLogin = async ({ buildingCode }: { buildingCode: string }) => {
-        if (!deviceId) throw new Error('Device not ready');
-        const data = await api.post<AuthPayload>('/auth/device-login', {
-            buildingCode, deviceId,
-        });
-        await saveSession(data);
-    };
+    const logout = async () => { await clearSession(); };
 
-    const logout = async () => {
-        await clearSession();
-    };
+    const activeMembership = useMemo(
+        () => memberships.find((m) => m.status === 'active' && m.org.status === 'active') ?? null,
+        [memberships],
+    );
 
-    // ─── Context value ─────────────────────────────────────────────────────────
-
-    const value = useMemo(
-        () => ({ ready, user, org, deviceId, register, login, deviceLogin, logout }),
-        [ready, user, org, deviceId],
+    const value = useMemo<AuthContextType>(
+        () => ({ ready, user, memberships, activeMembership, register, login, refreshMe, logout }),
+        [ready, user, memberships, activeMembership],
     );
 
     return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;

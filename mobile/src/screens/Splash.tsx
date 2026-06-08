@@ -8,19 +8,18 @@ import { useAuth } from '../state/auth';
 
 export default function Splash() {
     const navigation = useAppNavigation();
-    const { ready, user } = useAuth();
+    const { ready, user, activeMembership } = useAuth();
 
     useEffect(() => {
-        if (!ready) return; // wait for SecureStore restore to finish
+        if (!ready) return;
 
-        // Short delay so the splash logo is always visible
         const timer = setTimeout(() => {
-            if (user) {
-                // Restored session — go straight to the app
-                navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
-            } else {
-                // No session (or session was wiped by 401 handler)
+            if (!user) {
                 navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            } else if (!activeMembership) {
+                navigation.reset({ index: 0, routes: [{ name: 'PendingApproval' }] });
+            } else {
+                navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
             }
         }, 800);
 

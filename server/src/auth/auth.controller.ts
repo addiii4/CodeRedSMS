@@ -1,38 +1,37 @@
-import { Body, Controller, Post, Get, UseGuards, Req, Inject } from '@nestjs/common';
+import { Body, Controller, Post, Get, UseGuards, Inject, Param } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt.guard';
 import { CurrentUser, ReqUser } from './current-user.decorator';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { DeviceLoginDto } from './dto/device-login.dto';
 import { VerifyPasswordDto } from './dto/verify-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 
 @Controller('auth')
 export class AuthController {
-    constructor(@Inject(AuthService) private readonly authService: AuthService) {
-        console.log('✅ AuthService injected:', !!authService);
-    }
+    constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
     @UseGuards(JwtAuthGuard)
     @Get('me')
-    me(@Req() req: any) {
-        return req.user;
+    me(@CurrentUser() user: ReqUser) {
+        return this.authService.me(user.userId);
     }
 
     @Post('register')
     register(@Body() dto: RegisterDto) {
-        return this.authService.register(dto.buildingCode, dto.email, dto.password, dto.deviceId, dto.platform, dto.displayName);
+        return this.authService.register({
+            mode: dto.mode,
+            email: dto.email,
+            password: dto.password,
+            displayName: dto.displayName,
+            buildingCode: dto.buildingCode,
+            orgName: dto.orgName,
+        });
     }
 
     @Post('login')
     login(@Body() dto: LoginDto) {
-        return this.authService.login(dto.buildingCode, dto.email, dto.password, dto.deviceId, dto.platform);
-    }
-
-    @Post('device-login')
-    deviceLogin(@Body() dto: DeviceLoginDto) {
-        return this.authService.deviceLogin(dto.buildingCode, dto.deviceId);
+        return this.authService.login(dto.email, dto.password);
     }
 
     @UseGuards(JwtAuthGuard)
@@ -43,6 +42,30 @@ export class AuthController {
 
     @Post('forgot-password')
     forgotPassword(@Body() dto: ForgotPasswordDto) {
-        return this.authService.forgotPassword(dto.buildingCode, dto.email, dto.newPassword);
+        return this.authService.forgotPassword(dto.email, dto.newPassword);
+    }
+
+    // ── Org-admin approval of pending members ──────────────────────────────
+
+    @UseGuards(JwtAuthGuard)
+    @Post('memberships/:id/approve')
+    approveMembership(@CurrentUser() user: ReqUser, @Param('id') id: string) {
+        return this.authService.approveMembership(user.userId, id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('memberships/:id/reject')
+    rejectMembership(@CurrentUser() user: ReqUser, @Param('id') id: string) {
+        return this.authService.rejectMembership(user.userId, id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('memberships/:id/role')
+    updateRole(
+        @CurrentUser() user: ReqUser,
+        @Param('id') id: string,
+        @Body() body: { role: 'admin' | 'editor' | 'viewer' },
+    ) {
+        return this.authService.updateMembershipRole(user.userId, id, body.role);
     }
 }

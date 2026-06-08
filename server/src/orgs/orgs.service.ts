@@ -14,7 +14,10 @@ export class OrgsService {
     async getMe(user: ReqUser) {
         const org = await this.prisma.organization.findUnique({ where: { id: user.orgId } });
         if (!org) throw new NotFoundException('Organisation not found');
-        return { id: org.id, name: org.name, code: org.code, senderId: org.senderId, credits: org.credits };
+        return {
+            id: org.id, name: org.name, code: org.code,
+            senderId: org.senderId, credits: org.credits, status: org.status,
+        };
     }
 
     async updateMe(user: ReqUser, dto: UpdateOrgDto) {
@@ -25,20 +28,26 @@ export class OrgsService {
         if (dto.name !== undefined) data.name = dto.name;
         if (dto.senderId !== undefined) data.senderId = dto.senderId;
         const updated = await this.prisma.organization.update({ where: { id: user.orgId }, data });
-        return { id: updated.id, name: updated.name, code: updated.code, senderId: updated.senderId, credits: updated.credits };
+        return {
+            id: updated.id, name: updated.name, code: updated.code,
+            senderId: updated.senderId, credits: updated.credits, status: updated.status,
+        };
     }
 
+    /** All members + their status. Used by org admins to approve/reject + see who's in the org. */
     async getMembers(user: ReqUser) {
         const memberships = await this.prisma.membership.findMany({
             where: { orgId: user.orgId },
             include: { user: { select: { id: true, email: true, displayName: true } } },
-            orderBy: { createdAt: 'asc' },
+            orderBy: [{ status: 'asc' }, { createdAt: 'asc' }],
         });
         return memberships.map(m => ({
+            membershipId: m.id,
             userId: m.userId,
             email: m.user.email,
             displayName: m.user.displayName,
             role: m.role,
+            status: m.status,
             joinedAt: m.createdAt,
         }));
     }

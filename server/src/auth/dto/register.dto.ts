@@ -1,24 +1,26 @@
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class RegisterDto {
-    @IsString()
-    buildingCode!: string;
+  @IsIn(['join', 'create'])
+  mode!: 'join' | 'create';
 
-    @IsEmail()
-    email!: string;
+  @IsEmail()
+  email!: string;
 
-    @IsString()
-    @MinLength(6)
-    password!: string;
+  @IsString()
+  @MinLength(6)
+  password!: string;
 
-    @IsString()
-    deviceId!: string;
+  @IsOptional()
+  @IsString()
+  displayName?: string;
 
-    @IsOptional()
-    @IsString()
-    displayName?: string;
+  /** Building code: existing-org code when mode='join', new code to claim when mode='create'. */
+  @IsString()
+  buildingCode!: string;
 
-    @IsOptional()
-    @IsString()
-    platform?: string;
+  /** Display name for the new organisation. Required when mode='create'. */
+  @IsOptional()
+  @IsString()
+  orgName?: string;
 }

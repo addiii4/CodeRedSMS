@@ -23,7 +23,8 @@ const NAV: NavItem[] = [
  * Renders nothing when there's no user (children get to handle public routes).
  */
 export default function Layout({ children }: { children: ReactNode }) {
-  const { user, org, logout } = useAuth();
+  const { user, activeMembership, logout } = useAuth();
+  const org = activeMembership?.org;
   const navigate = useNavigate();
 
   return (

@@ -2,13 +2,61 @@ import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly auth: AuthService,
   ) {}
+
+  // ── Org approval (super-admin only) ─────────────────────────────────────
+
+  async listPendingOrgs() {
+    return this.prisma.organization.findMany({
+      where: { status: 'pending' },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        users: {
+          where: { status: 'pending' },
+          include: { user: { select: { id: true, email: true, displayName: true, createdAt: true } } },
+          take: 1,
+        },
+      },
+    });
+  }
+
+  async approveOrg(orgId: string) {
+    const org = await this.prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) throw new BadRequestException('Org not found');
+    if (org.status === 'active') return { ok: true, alreadyActive: true };
+
+    await this.prisma.$transaction([
+      this.prisma.organization.update({ where: { id: orgId }, data: { status: 'active' } }),
+      // Activate the requesting admin's membership (first pending admin) so they can log in
+      this.prisma.membership.updateMany({
+        where: { orgId, status: 'pending', role: 'admin' },
+        data: { status: 'active' },
+      }),
+    ]);
+
+    // Seed default templates + welcome credits (idempotent)
+    await this.auth.seedNewOrg(orgId);
+
+    return { ok: true };
+  }
+
+  async rejectOrg(orgId: string) {
+    const org = await this.prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) throw new BadRequestException('Org not found');
+    if (org.status === 'active') throw new BadRequestException('Cannot reject an already-active org');
+
+    // Cascade deletes memberships, users (if no other memberships), templates, etc.
+    await this.prisma.organization.delete({ where: { id: orgId } });
+    return { ok: true };
+  }
 
   /**
    * Super-admin login — email + password only (no building code).

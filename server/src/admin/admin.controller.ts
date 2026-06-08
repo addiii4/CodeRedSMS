@@ -151,4 +151,24 @@ export class AdminController {
   deleteContact(@Param('id') id: string) {
     return this.admin.deleteContact(id);
   }
+
+  // ── Org approval ────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Get('pending-orgs')
+  listPendingOrgs() {
+    return this.admin.listPendingOrgs();
+  }
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Post('orgs/:id/approve')
+  approveOrg(@Param('id') id: string) {
+    return this.admin.approveOrg(id);
+  }
+
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @Post('orgs/:id/reject')
+  rejectOrg(@Param('id') id: string) {
+    return this.admin.rejectOrg(id);
+  }
 }

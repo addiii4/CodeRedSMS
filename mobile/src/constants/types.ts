@@ -46,4 +46,5 @@ export type RootStackParamList = {
     OrgSettings: undefined;
     OrgMembers: undefined;
     ForgotPassword: undefined;
+    PendingApproval: undefined;
 };

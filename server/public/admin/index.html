@@ -132,6 +132,7 @@
     <div id="banner"></div>
     <div class="tabs">
       <div class="tab active" data-tab="stats" onclick="show('stats')">Overview</div>
+      <div class="tab" data-tab="pending" onclick="show('pending')">Pending Orgs <span id="pending_count" class="bell-badge" style="position:static;display:none">0</span></div>
       <div class="tab" data-tab="orgs" onclick="show('orgs')">Organizations</div>
       <div class="tab" data-tab="users" onclick="show('users')">Users</div>
       <div class="tab" data-tab="messages" onclick="show('messages')">Messages</div>
@@ -144,6 +145,10 @@
         <div class="auto-refresh"><span class="pulse"></span><span id="last_updated">—</span></div>
       </div>
       <div class="stats" id="stats_grid"></div>
+    </div>
+
+    <div id="tab_pending" class="hidden">
+      <div class="card"><div id="pending_table"></div></div>
     </div>
 
     <div id="tab_orgs" class="hidden">
@@ -298,7 +303,17 @@ async function showDash() {
 function startTimers() {
   stopTimers();
   statsTimer = setInterval(() => { if ($('tab_stats') && !$('tab_stats').classList.contains('hidden')) loadStats(); }, 30000);
-  eventsTimer = setInterval(refreshEvents, 60000);
+  eventsTimer = setInterval(() => { refreshEvents(); refreshPendingCount(); }, 60000);
+  refreshPendingCount();
+}
+
+async function refreshPendingCount() {
+  try {
+    const orgs = await api('/admin/pending-orgs');
+    const c = $('pending_count');
+    if (orgs.length > 0) { c.textContent = orgs.length; c.style.display = 'inline-block'; }
+    else c.style.display = 'none';
+  } catch {}
 }
 function stopTimers() {
   if (statsTimer) clearInterval(statsTimer);
@@ -308,15 +323,62 @@ function stopTimers() {
 
 /* ── Tabs ────────────────────────────────────────────────────────────────── */
 function show(tab) {
-  ['stats','orgs','users','messages','ledger'].forEach(t => {
+  ['stats','pending','orgs','users','messages','ledger'].forEach(t => {
     $('tab_'+t).classList.toggle('hidden', t !== tab);
     document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
   });
   if (tab === 'stats') loadStats();
+  if (tab === 'pending') loadPending();
   if (tab === 'orgs') loadOrgs();
   if (tab === 'users') loadUsers();
   if (tab === 'messages') loadMessages();
   if (tab === 'ledger') loadLedger();
+}
+
+/* ── Pending org approval ───────────────────────────────────────────────── */
+async function loadPending() {
+  try {
+    const orgs = await api('/admin/pending-orgs');
+    // Update tab counter
+    const c = $('pending_count');
+    if (orgs.length > 0) { c.textContent = orgs.length; c.style.display = 'inline-block'; }
+    else c.style.display = 'none';
+
+    const rows = orgs.map(o => {
+      const requester = o.users[0]?.user;
+      return `
+        <tr>
+          <td><b>${escape(o.name)}</b><br><span class="small">${o.code}</span></td>
+          <td>${requester ? `${escape(requester.email)}<br><span class="small">${escape(requester.displayName)}</span>` : '—'}</td>
+          <td>${fmtDate(o.createdAt)}</td>
+          <td>
+            <div class="actions">
+              <button class="btn btn-small" onclick="approveOrg('${o.id}', '${escape(o.name).replace(/'/g, '&#39;')}')">Approve</button>
+              <button class="btn btn-small btn-danger" onclick="rejectOrg('${o.id}', '${escape(o.name).replace(/'/g, '&#39;')}')">Reject</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+    $('pending_table').innerHTML = `
+      <table>
+        <thead><tr><th>Organisation</th><th>Requesting Admin</th><th>Requested</th><th></th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="4" class="small">No pending org requests.</td></tr>'}</tbody>
+      </table>
+    `;
+  } catch (e) { $('pending_table').innerHTML = '<div class="err">' + escape(e.message) + '</div>'; }
+}
+
+async function approveOrg(id, name) {
+  if (!confirm(`Approve "${name}"?\n\nThe requesting admin will gain full access, and the org will be seeded with 20 welcome credits + 5 default templates.`)) return;
+  try { await api('/admin/orgs/' + id + '/approve', { method: 'POST' }); loadPending(); }
+  catch (e) { alert('Approve failed: ' + e.message); }
+}
+
+async function rejectOrg(id, name) {
+  if (!confirm(`Reject and delete "${name}"?\n\nThe organisation and the requesting user's membership will be removed. Cannot be undone.`)) return;
+  try { await api('/admin/orgs/' + id + '/reject', { method: 'POST' }); loadPending(); }
+  catch (e) { alert('Reject failed: ' + e.message); }
 }
 
 function fmtDate(d) {
