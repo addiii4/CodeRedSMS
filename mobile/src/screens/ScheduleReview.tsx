@@ -194,7 +194,16 @@ export default function ScheduleReview() {
           <Text style={styles.subMeta}>{charCount} chars</Text>
           <Text
             style={styles.link}
-            onPress={() => navigation.pop(2)}
+            onPress={() =>
+              // Navigate (not pop) so Compose receives the recipient ids as params
+              // and can carry them forward through SelectGroups again — no selection lost.
+              navigation.navigate('Compose', {
+                presetTitle: title,
+                presetBody: body,
+                presetGroupIds: groupIds,
+                presetContactIds: contactIds,
+              })
+            }
           >
             Edit
           </Text>

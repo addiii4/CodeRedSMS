@@ -113,7 +113,15 @@ export default function ScheduleReview() {
         <p className="text-sm text-ink whitespace-pre-wrap line-clamp-4">{state.body}</p>
         <p className="text-xs text-muted mt-2">{state.body.length} chars · {segments} segment{segments === 1 ? '' : 's'}</p>
         <button
-          onClick={() => navigate('/compose', { state: { presetTitle: state.title, presetBody: state.body } })}
+          onClick={() => navigate('/compose', {
+            state: {
+              presetTitle: state.title,
+              presetBody: state.body,
+              // Carry recipient selection so the user doesn't lose it on the round-trip.
+              presetGroupIds: state.groupIds,
+              presetContactIds: state.contactIds,
+            },
+          })}
           className="text-sm font-semibold text-primary mt-2"
         >
           Edit

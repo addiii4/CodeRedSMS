@@ -1,10 +1,11 @@
 import { ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Send, Users, FileText, BarChart3, CreditCard,
-  Settings, LogOut, Bell, Building2,
+  LayoutDashboard, Send, Users, FileText, BarChart3,
+  Settings, LogOut,
 } from 'lucide-react';
 import { useAuth } from '../state/auth';
+import { usePendingMembers } from '../hooks/usePendingMembers';
 
 type NavItem = { label: string; to: string; icon: typeof LayoutDashboard };
 
@@ -14,7 +15,6 @@ const NAV: NavItem[] = [
   { label: 'Templates',  to: '/templates',  icon: FileText },
   { label: 'Contacts',   to: '/contacts',   icon: Users },
   { label: 'Logs',       to: '/logs',       icon: BarChart3 },
-  { label: 'Billing',    to: '/billing',    icon: CreditCard },
   { label: 'Settings',   to: '/settings',   icon: Settings },
 ];
 
@@ -26,6 +26,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { user, activeMembership, logout } = useAuth();
   const org = activeMembership?.org;
   const navigate = useNavigate();
+  const pendingCount = usePendingMembers();
 
   return (
     <div className="flex min-h-screen">
@@ -42,20 +43,29 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 p-3 space-y-1">
-          {NAV.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${
-                  isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
-                }`
-              }
-            >
-              <item.icon size={18} />
-              {item.label}
-            </NavLink>
-          ))}
+          {NAV.map((item) => {
+            // Settings shows a badge when there are pending member requests to approve.
+            const badge = item.to === '/settings' && pendingCount > 0 ? pendingCount : 0;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${
+                    isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                  }`
+                }
+              >
+                <item.icon size={18} />
+                <span className="flex-1">{item.label}</span>
+                {badge > 0 && (
+                  <span className="bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    {badge}
+                  </span>
+                )}
+              </NavLink>
+            );
+          })}
         </nav>
 
         {/* User footer */}

@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Send, Users, FileText, BarChart3, CreditCard,
-  CheckCircle2, XCircle, Clock, Activity,
+  CheckCircle2, XCircle, Clock, Activity, HelpCircle,
 } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import PasswordGate from '../components/PasswordGate';
 import { paymentsApi } from '../services/payments';
 import { messagesApi, MessageListItem } from '../services/messages';
+import { useAuth } from '../state/auth';
 
 type StatusIcon = { Icon: typeof CheckCircle2; color: string };
 
@@ -30,17 +32,30 @@ function formatDate(iso: string) {
 }
 
 const QUICK_ACTIONS: { label: string; to: string; Icon: typeof Send; tag: string }[] = [
-  { label: 'New Message', to: '/compose',   Icon: Send,       tag: 'Compose' },
-  { label: 'Contacts',    to: '/contacts',  Icon: Users,      tag: 'Manage' },
-  { label: 'Templates',   to: '/templates', Icon: FileText,   tag: 'Reuse' },
-  { label: 'Logs',        to: '/logs',      Icon: BarChart3,  tag: 'View' },
+  { label: 'Contacts',  to: '/contacts',  Icon: Users,      tag: 'Manage' },
+  { label: 'Templates', to: '/templates', Icon: FileText,   tag: 'Reuse' },
+  { label: 'Logs',      to: '/logs',      Icon: BarChart3,  tag: 'View' },
+  { label: 'Support',   to: '/help',      Icon: HelpCircle, tag: 'Help' },
 ];
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { activeMembership } = useAuth();
+  const isAdmin = activeMembership?.role === 'admin';
+
   const [credits, setCredits] = useState<number | null>(null);
   const [recent, setRecent] = useState<MessageListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [gateOpen, setGateOpen] = useState(false);
+
+  /** Buy Credits = admin-only. Non-admins see a polite block. */
+  const handleBilling = () => {
+    if (!isAdmin) {
+      alert('Only org admins can buy credits. Please ask your admin to top up.');
+      return;
+    }
+    setGateOpen(true);
+  };
 
   useEffect(() => {
     let active = true;
@@ -62,13 +77,28 @@ export default function Dashboard() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <button
-          onClick={() => navigate('/billing')}
+          onClick={handleBilling}
           className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-full font-semibold text-sm flex items-center gap-2 shadow"
         >
           <CreditCard size={16} />
           {credits === null ? '…' : `${credits.toLocaleString()} Credits`}
         </button>
       </div>
+
+      {/* Hero CTA — primary action: send a new message */}
+      <button
+        onClick={() => navigate('/compose')}
+        className="w-full bg-primary hover:bg-primary-hover text-white rounded-2xl p-6 mb-6 flex items-center gap-4 shadow-sm transition"
+      >
+        <div className="w-12 h-12 rounded-xl bg-white/15 grid place-items-center">
+          <Send size={24} />
+        </div>
+        <div className="text-left flex-1">
+          <div className="text-lg font-semibold">Send a New Message</div>
+          <div className="text-sm opacity-80">Choose a template or write a custom message</div>
+        </div>
+        <div className="hidden md:block text-sm font-semibold opacity-80">Compose →</div>
+      </button>
 
       {/* Quick Actions */}
       <h2 className="text-sm font-semibold text-muted uppercase tracking-wider mb-3">Quick Actions</h2>
@@ -119,6 +149,14 @@ export default function Dashboard() {
       <div className="mt-6 text-center">
         <Button variant="secondary" onClick={() => navigate('/logs')}>View All Logs</Button>
       </div>
+
+      <PasswordGate
+        open={gateOpen}
+        title="Billing Access"
+        subtitle="Confirm your password to manage credits"
+        onSuccess={() => { setGateOpen(false); navigate('/billing'); }}
+        onCancel={() => setGateOpen(false)}
+      />
     </div>
   );
 }

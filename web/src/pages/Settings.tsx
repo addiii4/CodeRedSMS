@@ -5,28 +5,46 @@ import {
   HelpCircle, Mail, LogOut, ChevronRight,
 } from 'lucide-react';
 import Card from '../components/Card';
+import PasswordGate from '../components/PasswordGate';
 import { useAuth } from '../state/auth';
+import { usePendingMembers } from '../hooks/usePendingMembers';
 import { paymentsApi } from '../services/payments';
 
-type Row = { label: string; sub?: string; Icon: typeof User; to?: string; onClick?: () => void; danger?: boolean };
+type Row = { label: string; sub?: string; Icon: typeof User; to?: string; onClick?: () => void; danger?: boolean; badge?: number };
 
 export default function Settings() {
   const navigate = useNavigate();
   const { user, activeMembership, logout } = useAuth();
   const [credits, setCredits] = useState<number | null>(null);
+  const [gateTarget, setGateTarget] = useState<string | null>(null);
 
   useEffect(() => {
     paymentsApi.balance().then((b) => setCredits(b.credits)).catch(() => {});
   }, []);
 
   const isAdmin = activeMembership?.role === 'admin';
+  const pendingCount = usePendingMembers();
+
+  /** Billing rows: admin-only. Non-admins get a polite block; admins go through the password gate. */
+  const handleBilling = (target: string) => () => {
+    if (!isAdmin) {
+      alert('Only org admins can manage billing. Please ask your admin.');
+      return;
+    }
+    setGateTarget(target);
+  };
 
   const sections: { title: string; rows: Row[] }[] = [
     {
       title: 'Organisation',
       rows: [
         { label: 'Org Settings', sub: 'Name, building code', Icon: Building2, to: '/settings/org' },
-        { label: 'Members', sub: isAdmin ? 'Manage who has access' : 'See who has access', Icon: Users, to: '/settings/members' },
+        {
+          label: 'Members',
+          sub: pendingCount > 0 ? `${pendingCount} pending approval` : (isAdmin ? 'Manage who has access' : 'See who has access'),
+          Icon: Users, to: '/settings/members',
+          badge: pendingCount,
+        },
       ],
     },
     {
@@ -39,8 +57,8 @@ export default function Settings() {
     {
       title: 'Billing',
       rows: [
-        { label: 'Buy Credits', sub: credits === null ? '' : `${credits} credits remaining`, Icon: CreditCard, to: '/billing' },
-        { label: 'Purchase History', Icon: History, to: '/billing/history' },
+        { label: 'Buy Credits',      sub: credits === null ? '' : `${credits} credits remaining`, Icon: CreditCard, onClick: handleBilling('/billing') },
+        { label: 'Purchase History', Icon: History, onClick: handleBilling('/billing/history') },
       ],
     },
     {
@@ -74,6 +92,11 @@ export default function Settings() {
                   <div className="font-semibold text-sm">{r.label}</div>
                   {r.sub && <div className="text-xs text-muted truncate">{r.sub}</div>}
                 </div>
+                {r.badge && r.badge > 0 ? (
+                  <span className="bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shrink-0">
+                    {r.badge}
+                  </span>
+                ) : null}
                 <ChevronRight size={16} className="text-muted shrink-0" />
               </button>
             ))}
@@ -89,6 +112,14 @@ export default function Settings() {
           <LogOut size={16} /> Sign Out
         </button>
       </div>
+
+      <PasswordGate
+        open={!!gateTarget}
+        title="Billing Access"
+        subtitle="Confirm your password to continue"
+        onSuccess={() => { const t = gateTarget!; setGateTarget(null); navigate(t); }}
+        onCancel={() => setGateTarget(null)}
+      />
     </div>
   );
 }

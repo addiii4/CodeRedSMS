@@ -5,7 +5,17 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import { templatesApi, Template } from '../services/templates';
 
-type ComposeState = { presetTitle?: string; presetBody?: string };
+/**
+ * `presetGroupIds` / `presetContactIds` are passed through when the user comes
+ * back from ScheduleReview's "Edit Message" link, so we can carry their already-
+ * selected recipients forward into SelectRecipients again without losing them.
+ */
+type ComposeState = {
+  presetTitle?: string;
+  presetBody?: string;
+  presetGroupIds?: string[];
+  presetContactIds?: string[];
+};
 
 function countSegments(body: string) {
   if (!body) return 1;
@@ -44,7 +54,14 @@ export default function Compose() {
       alert('Title and message body are required.');
       return;
     }
-    navigate('/compose/recipients', { state: { title: title.trim(), body: body.trim() } });
+    navigate('/compose/recipients', {
+      state: {
+        title: title.trim(),
+        body: body.trim(),
+        presetGroupIds: state.presetGroupIds,
+        presetContactIds: state.presetContactIds,
+      },
+    });
   };
 
   return (

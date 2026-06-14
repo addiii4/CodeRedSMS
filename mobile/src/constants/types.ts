@@ -6,11 +6,18 @@ export type RootStackParamList = {
     Signup: undefined;
     Dashboard: undefined;
     // Compose flow
-    Compose: { presetTitle?: string; presetBody?: string } | undefined;
+    Compose: {
+        presetTitle?: string;
+        presetBody?: string;
+        presetGroupIds?: string[];
+        presetContactIds?: string[];
+    } | undefined;
     SelectGroups: {
         fromCompose?: boolean;
         draftTitle?: string;
         draftBody?: string;
+        presetGroupIds?: string[];
+        presetContactIds?: string[];
     } | undefined;
     ScheduleReview: {
         title: string;

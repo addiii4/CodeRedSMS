@@ -15,8 +15,8 @@ const SAMPLE_ROWS: BulkImportRow[] = [
 /** Normalise any column name to a known canonical key. */
 function mapHeader(h: string): 'fullName' | 'phoneE164' | 'groups' | null {
   const k = h.toLowerCase().trim().replace(/[_\s-]/g, '');
-  if (['fullname', 'name'].includes(k)) return 'fullName';
-  if (['phone', 'phonenumber', 'phonee164', 'mobile'].includes(k)) return 'phoneE164';
+  if (['name', 'fullname'].includes(k)) return 'fullName';
+  if (['phone', 'phonenumber', 'phonee164', 'mobile', 'number'].includes(k)) return 'phoneE164';
   if (['group', 'groups', 'groupname', 'groupnames'].includes(k)) return 'groups';
   return null;
 }
@@ -111,16 +111,21 @@ export default function ContactImport() {
         <ChevronLeft size={16} /> Back to Contacts
       </button>
       <h1 className="text-2xl font-bold mb-1">Import Contacts</h1>
-      <p className="text-sm text-muted mb-6">Upload a CSV with <code className="bg-bg px-1.5 py-0.5 rounded">fullName</code>, <code className="bg-bg px-1.5 py-0.5 rounded">phoneE164</code>, and optionally <code className="bg-bg px-1.5 py-0.5 rounded">groups</code> (comma-separated).</p>
+      <p className="text-sm text-muted mb-6">Upload a CSV with 3 columns: <b>Name</b>, <b>Phone number</b>, and optionally <b>Group</b>. Existing contacts with the same phone are preserved.</p>
 
       {/* Format card */}
       <Card className="mb-4 bg-amber-50 border-amber-200">
         <div className="text-xs font-semibold uppercase tracking-wider text-amber-900 mb-2">Expected format</div>
         <pre className="text-xs bg-white border border-amber-200 rounded p-3 overflow-x-auto">
-fullName,phoneE164,groups
-Alice Smith,+61400000001,Staff;Emergency
-Bob Brown,0400000002,Staff
+Name,Phone,Group
+Alice Smith,+61400000001,Staff
+Bob Brown,0400000002,Residents
+Charlie Lee,+61400000003,
         </pre>
+        <p className="text-xs text-amber-900 mt-3">
+          Australian numbers starting with <code>0</code> are auto-prefixed with <code>+61</code>.
+          Group is optional — leave blank or omit the column.
+        </p>
       </Card>
 
       {/* Upload */}

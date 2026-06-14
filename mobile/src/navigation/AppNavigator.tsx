@@ -52,12 +52,19 @@ export default function AppNavigator() {
         <NavigationContainer ref={navigationRef} linking={linking}>
           <Stack.Navigator
             initialRouteName="Splash"
-            screenOptions={{ headerShown: false }}
+            screenOptions={{
+              headerShown: false,
+              // Default to fluid right-to-left slide. iOS gesture remains enabled.
+              animation: 'slide_from_right',
+              animationDuration: 220,
+              gestureEnabled: true,
+            }}
           >
-            <Stack.Screen name="Splash" component={Splash} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Signup" component={SignupScreen} />
-            <Stack.Screen name="Dashboard" component={Dashboard} />
+            {/* Splash / Auth screens fade so they don't feel like "back" pages */}
+            <Stack.Screen name="Splash" component={Splash} options={{ animation: 'fade', animationDuration: 250 }} />
+            <Stack.Screen name="Login" component={LoginScreen} options={{ animation: 'fade' }} />
+            <Stack.Screen name="Signup" component={SignupScreen} options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="Dashboard" component={Dashboard} options={{ animation: 'fade' }} />
             <Stack.Screen name="Compose" component={Compose} />
             <Stack.Screen name="TemplatePreview" component={TemplatePreview} />
             <Stack.Screen name="SelectGroups" component={SelectGroups} />
@@ -69,7 +76,7 @@ export default function AppNavigator() {
             <Stack.Screen name="TemplateEdit" component={TemplateEdit} />
             <Stack.Screen name="Contacts" component={Contacts} />
             <Stack.Screen name="GroupDetail" component={GroupDetail} />
-            <Stack.Screen name="BuyCredits" component={BuyCredits} />
+            <Stack.Screen name="BuyCredits" component={BuyCredits} options={{ animation: 'slide_from_bottom' }} />
             <Stack.Screen name="GroupEdit" component={GroupEdit} />
             <Stack.Screen name="PersonEdit" component={PersonEdit} />
             <Stack.Screen name="Profile" component={Profile} />

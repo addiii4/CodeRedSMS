@@ -5,7 +5,12 @@ import Button from '../components/Button';
 import { groupsApi, Group } from '../services/groups';
 import { contactsApi, Contact } from '../services/contacts';
 
-type LocationState = { title: string; body: string };
+type LocationState = {
+  title: string;
+  body: string;
+  presetGroupIds?: string[];
+  presetContactIds?: string[];
+};
 
 function Checkbox({ checked }: { checked: boolean }) {
   return (
@@ -26,8 +31,9 @@ export default function SelectRecipients() {
 
   const [groups, setGroups]     = useState<Group[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [selectedGroupIds, setSelectedGroupIds]     = useState<Set<string>>(new Set());
-  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
+  // Pre-fill from "Edit Message" round-trip so users don't lose their selection.
+  const [selectedGroupIds, setSelectedGroupIds]     = useState<Set<string>>(new Set(state.presetGroupIds ?? []));
+  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set(state.presetContactIds ?? []));
   const [search, setSearch] = useState('');
 
   useEffect(() => {

@@ -32,7 +32,7 @@ export default function NavBar({ activeTab, onHome, onCompose, onMenu, disableCo
                 style={styles.fab}
                 hitSlop={10}
             >
-                <Ionicons name="add" size={28} color="#FFFFFF" />
+                <Ionicons name="send" size={22} color="#FFFFFF" style={{ transform: [{ rotate: '-20deg' }], marginLeft: -2 }} />
             </Pressable>
 
             {/* Menu */}

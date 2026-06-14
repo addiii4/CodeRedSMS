@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextStyle } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextStyle, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import color from '../constants/color';
 import spacing from '../constants/spacing';
@@ -12,6 +12,7 @@ import PasswordGateModal from '../components/PasswordGateModal';
 import useAppNavigation from '../hooks/useAppNavigation';
 import { useAuth } from '../state/auth';
 import { paymentsApi } from '../services/payments';
+import { orgsApi } from '../services/orgs';
 
 // Storage keys — shared with Dashboard so it can read preferences
 export const PREF_DELIVERY_RECEIPTS = 'codered_pref_delivery_receipts';
@@ -25,10 +26,16 @@ export default function Settings() {
     const [lowCreditAlerts, setLowCreditAlerts] = useState(true);
     const [credits, setCredits] = useState<number | null>(null);
     const [billingTarget, setBillingTarget] = useState<BillingTarget>(null);
+    const [pendingCount, setPendingCount] = useState(0);
 
-    const { logout } = useAuth();
+    const { logout, activeMembership } = useAuth();
+    const isAdmin = activeMembership?.role === 'admin';
 
     function openBilling(target: BillingTarget) {
+        if (!isAdmin) {
+            Alert.alert('Admin only', 'Only org admins can manage billing. Please ask your admin.');
+            return;
+        }
         setBillingTarget(target);
     }
 
@@ -41,7 +48,11 @@ export default function Settings() {
             if (v !== null) setLowCreditAlerts(v === 'true');
         });
         paymentsApi.balance().then(r => setCredits(r.credits)).catch(() => {});
-    }, []);
+        // Pending count is admin-only; non-admins don't need this fetch.
+        if (isAdmin) {
+            orgsApi.getMembers().then(ms => setPendingCount(ms.filter(m => m.status === 'pending').length)).catch(() => {});
+        }
+    }, [isAdmin]);
 
     // Persist when toggled
     const handleDeliveryReceipts = (val: boolean) => {
@@ -93,7 +104,11 @@ export default function Settings() {
                 <View style={styles.section}>
                     <Text style={styles.sectionLabel}>Organisation</Text>
                     <ListRow title="Org Settings" onPress={() => navigation.navigate('OrgSettings')} />
-                    <ListRow title="Members" onPress={() => navigation.navigate('OrgMembers')} />
+                    <ListRow
+                        title="Members"
+                        meta={pendingCount > 0 ? `${pendingCount} pending approval` : undefined}
+                        onPress={() => navigation.navigate('OrgMembers')}
+                    />
                 </View>
 
                 {/* Account */}
@@ -101,7 +116,6 @@ export default function Settings() {
                     <Text style={styles.sectionLabel}>Account</Text>
                     <ListRow title="Profile" onPress={() => navigation.navigate('Profile')} />
                     <ListRow title="Change Password" onPress={() => navigation.navigate('ChangePassword')} />
-                    <ListRow title="Forgot / Reset Password" onPress={() => navigation.navigate('ForgotPassword')} />
                 </View>
 
                 {/* Contacts */}
