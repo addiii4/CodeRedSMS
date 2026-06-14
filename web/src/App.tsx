@@ -8,6 +8,9 @@ import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import PendingApproval from './pages/PendingApproval';
+import Compose from './pages/Compose';
+import SelectRecipients from './pages/SelectRecipients';
+import ScheduleReview from './pages/ScheduleReview';
 
 function AuthBoundary({ children }: { children: ReactNode }) {
   const { ready } = useAuth();
@@ -38,6 +41,9 @@ export default function App() {
         <Route path="/signup" element={<PublicOnlyRoute><Signup /></PublicOnlyRoute>} />
         <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/compose" element={<PrivateRoute><Compose /></PrivateRoute>} />
+        <Route path="/compose/recipients" element={<PrivateRoute><SelectRecipients /></PrivateRoute>} />
+        <Route path="/compose/review" element={<PrivateRoute><ScheduleReview /></PrivateRoute>} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </AuthBoundary>
