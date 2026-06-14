@@ -11,7 +11,7 @@ const ROLES: OrgMember['role'][] = ['admin', 'editor', 'viewer'];
 
 export default function OrgMembers() {
   const navigate = useNavigate();
-  const { activeMembership } = useAuth();
+  const { user, activeMembership } = useAuth();
   const isAdmin = activeMembership?.role === 'admin';
 
   const [members, setMembers] = useState<OrgMember[]>([]);
@@ -94,7 +94,8 @@ export default function OrgMembers() {
                   <div className="font-semibold text-sm">{m.displayName}</div>
                   <div className="text-xs text-muted truncate">{m.email}</div>
                 </div>
-                {isAdmin && m.userId !== activeMembership?.org.id ? (
+                {/* Admins can change role for everyone EXCEPT themselves (prevents self-demote lockout). */}
+                {isAdmin && m.userId !== user?.id ? (
                   <select
                     value={m.role}
                     onChange={(e) => setRole(m, e.target.value as OrgMember['role'])}
@@ -103,7 +104,9 @@ export default function OrgMembers() {
                     {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
                   </select>
                 ) : (
-                  <span className="text-xs uppercase tracking-wider text-muted">{ROLE_LABEL[m.role]}</span>
+                  <span className="text-xs uppercase tracking-wider text-muted">
+                    {ROLE_LABEL[m.role]}{m.userId === user?.id ? ' (you)' : ''}
+                  </span>
                 )}
               </div>
             ))}

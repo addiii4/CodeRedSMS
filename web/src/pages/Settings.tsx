@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User, Lock, Building2, Users, CreditCard, History,
-  HelpCircle, Mail, LogOut, ChevronRight, KeyRound,
+  HelpCircle, Mail, LogOut, ChevronRight,
 } from 'lucide-react';
 import Card from '../components/Card';
 import { useAuth } from '../state/auth';
@@ -34,7 +34,6 @@ export default function Settings() {
       rows: [
         { label: 'Profile', sub: user?.displayName, Icon: User, to: '/settings/profile' },
         { label: 'Change Password', Icon: Lock, to: '/settings/change-password' },
-        { label: 'Reset Password', Icon: KeyRound, to: '/forgot-password' },
       ],
     },
     {
