@@ -62,7 +62,8 @@ export default function SignupScreen() {
                     buildingCode: buildingCode.trim().toUpperCase(),
                 });
             }
-            navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
+            // Splash routes pending users to PendingApproval, active to Dashboard.
+            navigation.reset({ index: 0, routes: [{ name: 'Splash' }] });
         } catch (e: any) {
             Alert.alert('Sign up failed', e?.message || 'Please try again.');
         } finally {

@@ -66,13 +66,24 @@ export class AuthService {
 
     const existingOrg = await this.prisma.organization.findUnique({ where: { code: buildingCode } });
 
+    // Block joining the internal SYSADMIN org — that's reserved for super-admins
+    // created via the admin:setup CLI, not public signup.
+    if (buildingCode === 'SYSADMIN') throw new BadRequestException('Invalid building code');
+
+    const passwordHash = await bcrypt.hash(p.password, 10);
+    const displayName  = p.displayName?.trim() || email.split('@')[0];
+
     if (p.mode === 'join') {
       if (!existingOrg) throw new BadRequestException('No organisation found with that building code');
       if (existingOrg.status !== 'active') throw new BadRequestException('Organisation is not active yet');
 
-      const user = await this.createUser(email, p.password, p.displayName);
-      await this.prisma.membership.create({
-        data: { userId: user.id, orgId: existingOrg.id, role: 'editor', status: 'pending' },
+      // Atomic: user + membership together, or neither.
+      const user = await this.prisma.$transaction(async (tx) => {
+        const u = await tx.user.create({ data: { email, passwordHash, displayName } });
+        await tx.membership.create({
+          data: { userId: u.id, orgId: existingOrg.id, role: 'editor', status: 'pending' },
+        });
+        return u;
       });
 
       const accessToken = this.sign({ userId: user.id, orgId: existingOrg.id, email: user.email, role: 'editor' });
@@ -83,23 +94,15 @@ export class AuthService {
     if (existingOrg) throw new BadRequestException('Building code already taken');
     if (!p.orgName?.trim()) throw new BadRequestException('Organisation name required');
 
-    const org = await this.prisma.organization.create({
-      data: { code: buildingCode, name: p.orgName.trim(), status: 'pending' },
-    });
-    const user = await this.createUser(email, p.password, p.displayName);
-    await this.prisma.membership.create({
-      data: { userId: user.id, orgId: org.id, role: 'admin', status: 'pending' },
+    const result = await this.prisma.$transaction(async (tx) => {
+      const org  = await tx.organization.create({ data: { code: buildingCode, name: p.orgName!.trim(), status: 'pending' } });
+      const u    = await tx.user.create({ data: { email, passwordHash, displayName } });
+      await tx.membership.create({ data: { userId: u.id, orgId: org.id, role: 'admin', status: 'pending' } });
+      return { user: u, org };
     });
 
-    const accessToken = this.sign({ userId: user.id, orgId: org.id, email: user.email, role: 'admin' });
-    return this.session(user, accessToken);
-  }
-
-  private async createUser(email: string, password: string, displayName?: string) {
-    const passwordHash = await bcrypt.hash(password, 10);
-    return this.prisma.user.create({
-      data: { email, passwordHash, displayName: displayName?.trim() || email.split('@')[0] },
-    });
+    const accessToken = this.sign({ userId: result.user.id, orgId: result.org.id, email: result.user.email, role: 'admin' });
+    return this.session(result.user, accessToken);
   }
 
   /** Email + password login. No building code, no device fingerprint. */
@@ -110,17 +113,22 @@ export class AuthService {
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) throw new UnauthorizedException('Invalid credentials');
 
-    // Find the user's first ACTIVE membership for the JWT orgId.
-    // If none are active yet (pending), still issue a token but with an empty
-    // orgId — the frontend uses /auth/me to learn this and shows a pending screen.
+    // JWT orgId resolution:
+    //   1. Prefer the user's first ACTIVE membership (full app access).
+    //   2. Fall back to any membership (even pending) so endpoints that need
+    //      orgId on the JWT (like /auth/me) don't fail with "missing orgId".
+    //   3. Frontend decides "active vs pending" from /auth/me payload, not JWT.
     const activeMembership = await this.prisma.membership.findFirst({
       where: { userId: user.id, status: 'active' },
-      include: { org: true },
+    });
+    const anyMembership = activeMembership ?? await this.prisma.membership.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'asc' },
     });
 
     const accessToken = this.sign({
       userId: user.id,
-      orgId: activeMembership?.orgId ?? '',
+      orgId: anyMembership?.orgId ?? '',
       email: user.email,
       role: (activeMembership?.role as Role) ?? 'viewer',
     });
@@ -160,13 +168,34 @@ export class AuthService {
     return { ok: true };
   }
 
-  /** Reset password: email-only lookup (no building code). */
+  /**
+   * Reset password: email-only lookup (no building code).
+   *
+   * SECURITY: without an email-verification step, this endpoint lets anyone
+   * with a registered email reset that account's password. For super-admin
+   * accounts the risk is unacceptable — those must be reset via the
+   * `npm run admin:setup` CLI on the server, never via the public API.
+   *
+   * TODO: add email-link verification (Resend / Postmark) before launch
+   * graduates beyond the trusted pilot phase.
+   */
   async forgotPassword(email: string, newPassword: string) {
     if (!email || !newPassword) throw new BadRequestException('Email and password required');
     if (newPassword.length < 6) throw new BadRequestException('Password must be at least 6 characters');
 
-    const user = await this.prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
-    // Same response regardless to prevent enumeration
+    const normalized = email.trim().toLowerCase();
+
+    const superAdmins = (process.env.SUPER_ADMIN_EMAILS ?? '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    if (superAdmins.includes(normalized)) {
+      // Same generic response so attackers can't enumerate super-admin emails
+      console.warn(`[forgot-password] Blocked reset attempt for super-admin: ${normalized}`);
+      return { ok: true };
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { email: normalized } });
     if (!user) return { ok: true };
 
     const passwordHash = await bcrypt.hash(newPassword, 10);

@@ -25,7 +25,9 @@ export default function LoginScreen() {
         setLoading(true);
         try {
             await login({ email: email.trim().toLowerCase(), password });
-            navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
+            // Route through Splash so pending users land on PendingApproval,
+            // not a broken empty Dashboard.
+            navigation.reset({ index: 0, routes: [{ name: 'Splash' }] });
         } catch (e: any) {
             Alert.alert('Sign in failed', e?.message || 'Please check your credentials.');
         } finally {
