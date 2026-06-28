@@ -25,7 +25,9 @@ export default function PasswordGateModal({ visible, title = 'Confirm Password',
         setLoading(true);
         setError('');
         try {
-            await api.post('/auth/verify-password', { password });
+            // Skip global 401 handler — a 401 here means wrong password,
+            // NOT an expired session. Logging the user out would be a bug.
+            await api.post('/auth/verify-password', { password }, { skipAuthHandler: true });
             setPassword('');
             onSuccess();
         } catch {

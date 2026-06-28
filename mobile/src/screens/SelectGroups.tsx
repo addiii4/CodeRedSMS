@@ -59,8 +59,13 @@ export default function SelectGroups() {
 
     const [groups, setGroups]     = useState<Group[]>([]);
     const [contacts, setContacts] = useState<Contact[]>([]);
-    const [selectedGroups, setSelectedGroups]     = useState<Record<string, boolean>>({});
-    const [selectedContacts, setSelectedContacts] = useState<Record<string, boolean>>({});
+    // Pre-fill checkboxes from "Edit Message" round-trip so users don't lose their selection.
+    const [selectedGroups, setSelectedGroups]     = useState<Record<string, boolean>>(
+        Object.fromEntries((route.params?.presetGroupIds ?? []).map((id) => [id, true]))
+    );
+    const [selectedContacts, setSelectedContacts] = useState<Record<string, boolean>>(
+        Object.fromEntries((route.params?.presetContactIds ?? []).map((id) => [id, true]))
+    );
     const [q, setQ] = useState('');
 
     useEffect(() => {

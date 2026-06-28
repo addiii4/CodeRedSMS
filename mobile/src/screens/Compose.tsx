@@ -134,6 +134,9 @@ export default function Compose() {
             fromCompose: true,
             draftTitle: title,
             draftBody: body,
+            // Forward already-selected recipients when the user came back via "Edit Message".
+            presetGroupIds: route.params?.presetGroupIds,
+            presetContactIds: route.params?.presetContactIds,
           });
         }}
       />

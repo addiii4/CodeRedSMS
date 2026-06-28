@@ -21,6 +21,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { messagesApi } from '../services/messages';
 import { paymentsApi } from '../services/payments';
 import { PREF_LOW_CREDIT_ALERTS } from './Settings';
+import { useAuth } from '../state/auth';
 
 const LOW_CREDIT_THRESHOLD = 20;
 // Fires at most once per app session — prevents alert on every navigation.
@@ -89,10 +90,21 @@ const logStyles = StyleSheet.create({
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 export default function Dashboard() {
     const navigation = useAppNavigation();
+    const { activeMembership } = useAuth();
+    const isAdmin = activeMembership?.role === 'admin';
 
     const [recentLogs, setRecentLogs] = useState<LogItem[]>([]);
     const [credits, setCredits] = useState(0);
     const [gateVisible, setGateVisible] = useState(false);
+
+    /** Tapping credits = buy more. Only admins may; others get a polite block. */
+    const handleBilling = () => {
+        if (!isAdmin) {
+            Alert.alert('Admin only', 'Only org admins can buy credits. Please ask your admin to top up.');
+            return;
+        }
+        setGateVisible(true);
+    };
 
     useFocusEffect(
         useCallback(() => {
@@ -108,7 +120,7 @@ export default function Dashboard() {
                                 '⚠️ Low Credits',
                                 `You have ${res.credits} credit${res.credits === 1 ? '' : 's'} remaining.`,
                                 [
-                                    { text: 'Buy Credits', onPress: () => setGateVisible(true) },
+                                    { text: 'Buy Credits', onPress: handleBilling },
                                     { text: 'Dismiss' },
                                 ],
                             );
@@ -139,36 +151,18 @@ export default function Dashboard() {
                         <Text style={styles.title as any}>Dashboard</Text>
                         <CreditsBadge
                             credits={credits}
-                            onPress={() => setGateVisible(true)}
+                            onPress={handleBilling}
                         />
                     </View>
                 </SafeAreaView>
 
-                {/* Recent Activity */}
-                <SecTitle text="Recent Activity" />
-                {recentLogs.length === 0 ? (
-                    <ActivityCard text="No recent activity yet" />
-                ) : (
-                    recentLogs.map((item) => (
-                        <LogCard
-                            key={item.id}
-                            item={item}
-                            onPress={() => navigation.navigate('LogDetail', { id: item.id })}
-                        />
-                    ))
-                )}
-                <PrimaryButton
-                    label="View All Logs"
-                    onPress={() => navigation.navigate('Logs' as never)}
-                />
-
-                {/* Quick Actions */}
-                <SecTitle text="Quick Actions" />
+                {/* Quick Actions — top half */}
+                <Text style={styles.sectionTitle}>Quick Actions</Text>
                 <View style={styles.actionsGrid}>
                     <QuickActionButton
-                        label="Buy Credits"
-                        icon="card-outline"
-                        onPress={() => setGateVisible(true)}
+                        label="Support"
+                        icon="help-circle-outline"
+                        onPress={() => navigation.navigate('HelpCenter' as never)}
                     />
                     <QuickActionButton
                         label="Contacts"
@@ -185,6 +179,26 @@ export default function Dashboard() {
                         label="Logs"
                         icon="list"
                         lib="mat"
+                        onPress={() => navigation.navigate('Logs' as never)}
+                    />
+                </View>
+
+                {/* Recent Activity — bottom half */}
+                <View style={{ marginTop: Spacing.md }}>
+                    <Text style={styles.sectionTitle}>Recent Activity</Text>
+                    {recentLogs.length === 0 ? (
+                        <ActivityCard text="No recent activity yet" />
+                    ) : (
+                        recentLogs.map((item) => (
+                            <LogCard
+                                key={item.id}
+                                item={item}
+                                onPress={() => navigation.navigate('LogDetail', { id: item.id })}
+                            />
+                        ))
+                    )}
+                    <PrimaryButton
+                        label="View All Logs"
                         onPress={() => navigation.navigate('Logs' as never)}
                     />
                 </View>
@@ -215,20 +229,27 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     scrollContent: {
         paddingHorizontal: Spacing.lg,
-        paddingBottom: Spacing.xl + 72,
+        // 64 (NavBar) + 34 (home indicator) + 24 buffer = 122px clearance
+        // for the View All Logs button so it never hugs the plus icon.
+        paddingBottom: 122,
     },
     header: {
-        marginBottom: Spacing.lg,
+        marginBottom: Spacing.sm,           // was lg (24) → sm (8)
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
     title: { ...Typography.title } as TextStyle,
+    sectionTitle: {
+        ...Typography.sectionTitle,
+        marginTop: Spacing.md,              // was 24 → 16
+        marginBottom: Spacing.sm,           // was 12 → 8
+    } as TextStyle,
     actionsGrid: {
-        marginTop: Spacing.lg,
+        marginTop: Spacing.sm,              // was lg (24) → sm (8)
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        rowGap: Spacing.lg,
+        rowGap: Spacing.md,                 // was lg (24) → md (16)
     },
 });

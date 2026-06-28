@@ -11,6 +11,7 @@ model Organization {
   id                 String          @id @default(uuid())
   code               String          @unique
   name               String
+  status             OrgStatus       @default(active)
   senderId           String?
   credits            Int             @default(0)
   smsglobalKeyEnc    String?
@@ -38,14 +39,15 @@ model User {
 }
 
 model Membership {
-  id        String       @id @default(uuid())
+  id        String           @id @default(uuid())
   userId    String
   orgId     String
   role      Role
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    MembershipStatus @default(active)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  org       Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, orgId])
 }
@@ -150,6 +152,19 @@ enum Role {
   admin
   editor
   viewer
+}
+
+enum OrgStatus {
+  pending
+  active
+  suspended
+}
+
+enum MembershipStatus {
+  pending
+  active
+  suspended
+  rejected
 }
 
 enum MessageStatus {

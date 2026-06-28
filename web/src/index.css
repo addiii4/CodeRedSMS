@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body { background: theme(colors.bg); color: theme(colors.ink); }
+
+/* Subtle focus ring everywhere */
+*:focus-visible { outline: 2px solid theme(colors.primary); outline-offset: 2px; }
